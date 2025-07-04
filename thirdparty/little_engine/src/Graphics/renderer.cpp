@@ -1,0 +1,409 @@
+#include "LittleEngine/Graphics/renderer.h"
+
+#include "LittleEngine/error_logger.h"
+#include "LittleEngine/internal.h"
+#include <glad/glad.h>
+#include <glm/gtc/matrix_transform.hpp>
+
+
+#include <sstream>
+
+
+namespace LittleEngine
+{
+
+	Texture Renderer::s_defaultTexture = Texture();
+	Font Renderer::s_defaultFont = Font();
+
+#pragma region init / shut down
+
+	void Renderer::Initialize(glm::ivec2 size, unsigned int quadCount)
+	{
+
+		if (!internal::g_initialized)
+			ThrowError("RENDERER::INIT : library not initialized.");
+
+		if (m_isInitialized)
+		{
+			LogError("RENDERER::INIT : Renderer Already initized.");
+			return;	
+		}
+		m_isInitialized = true;
+
+		m_vertices.reserve(quadCount * 4);
+		m_indices.reserve(quadCount * 6);
+		m_textures.reserve(quadCount);
+
+		// initialize buffer objects
+		glGenVertexArrays(1, &m_VAO);
+		glGenBuffers(1, &m_VBO);
+		glGenBuffers(1, &m_EBO);
+
+		glBindVertexArray(m_VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+		//glBufferData(GL_ARRAY_BUFFER, quadCount * 4 * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadCount * 6 * sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
+
+
+		// position attribute
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
+		glEnableVertexAttribArray(0);
+		// texture coord attribute
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+		glEnableVertexAttribArray(1);
+		// color attribute
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+		glEnableVertexAttribArray(2);
+		// texture index attribute
+		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, textureIndex));
+		glEnableVertexAttribArray(3);
+
+		glBindVertexArray(0);
+
+		// set default texture / font
+		s_defaultTexture = Texture::GetDefaultTexture();
+		s_defaultFont = Font::GetDefaultFont(16.f);
+
+		// TODO CHANGE DEFAULT PATH
+
+#ifdef _DEBUG
+		GLenum err = glGetError();
+		if (err != GL_NO_ERROR) {
+			LogError("OpenGL Error during Renderer::Initialize - Code: " + std::to_string(err));
+		}
+#endif
+
+
+		UpdateWindowSize(size);
+
+	}
+
+	void Renderer::Shutdown()
+	{
+		if (!m_isInitialized)
+			return;
+
+
+		glDeleteVertexArrays(1, &m_VAO);
+		glDeleteBuffers(1, &m_VBO);
+		glDeleteBuffers(1, &m_EBO);
+
+		m_VAO = 0;
+		m_VBO = 0;
+		m_EBO = 0;
+
+		m_vertices.clear();
+		m_indices.clear();
+		m_textures.clear();
+		m_isInitialized = false;
+	}
+
+
+#pragma endregion
+
+	void Renderer::UpdateWindowSize(int w, int h)
+	{
+		m_width = w;
+		m_height = h;
+	}
+
+	void Renderer::BeginFrame()
+	{
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		
+		
+		ClearDrawQueue();
+
+	}
+	void Renderer::EndFrame()
+	{
+		Flush(); // render everything queued
+	}
+
+
+#pragma region Draw functions
+
+	void Renderer::DrawRect(const Rect& rect, Texture texture, const Color colors[4], const glm::vec4& uv)
+	{
+
+		if (texture.id == 0)	// problem
+			ThrowError("RENDERER::DrawRect : texture not loaded.");
+
+		// rect {x, y, w, h} (x,y) is bottom left
+		// uv is usually (0, 0, 1, 1) (u_min, v_min, u_max, v_max)
+
+		// position
+		glm::vec2 p0{ rect.x, rect.y };						// bottom left
+		glm::vec2 p1{ rect.x + rect.z, rect.y };			// bottom right
+		glm::vec2 p2{ rect.x + rect.z, rect.y + rect.w };	// top right
+		glm::vec2 p3{ rect.x, rect.y + rect.w };			// top left
+
+
+		// UVs
+		glm::vec2 uv0{ uv.x, uv.y };		// bottom left
+		glm::vec2 uv1{ uv.z, uv.y };		// bottom right
+		glm::vec2 uv2{ uv.z, uv.w };		// top right
+		glm::vec2 uv3{ uv.x, uv.w };		// top left
+
+		// TODO ADD ROTATION LATER
+
+		Vertex v0 = { p0, uv0, colors[0], texture.id};
+		Vertex v1 = { p1, uv1, colors[1], texture.id};
+		Vertex v2 = { p2, uv2, colors[2], texture.id};
+		Vertex v3 = { p3, uv3, colors[3], texture.id};
+
+
+		int index = m_vertices.size();
+
+		m_vertices.push_back(v0);
+		m_vertices.push_back(v1);
+		m_vertices.push_back(v2);
+		m_vertices.push_back(v3);
+
+		m_indices.push_back(index + 0);
+		m_indices.push_back(index + 1);
+		m_indices.push_back(index + 2);
+		m_indices.push_back(index + 0);
+		m_indices.push_back(index + 2);
+		m_indices.push_back(index + 3);
+
+		m_textures.push_back(texture);
+
+		m_quadCount++;
+	}
+
+	void Renderer::DrawString(const std::string& text, const glm::vec2 pos, const Font& font, Color color, float scale)
+	{
+		if (font.GetTexture().id == 0)
+		{
+			LogError("Renderer::DrawString : Font uninitialized.");
+			return;
+		}
+
+		font.Bind();
+
+		// position of the cursor.
+		float xpos = pos.x;
+		float ypos = pos.y - scale;
+
+
+		float factor = scale / font.GetSize();
+
+		for (char c : text)
+		{
+			if (c == '\n') {
+				// New line: reset x, move y down by line height
+				xpos = pos.x;
+				ypos -= scale;
+				continue;
+			}
+			const auto glyphs = font.GetGlyphs();
+			if (glyphs.find(c) == glyphs.end()) 
+				continue;
+
+			const GlyphInfo& g = glyphs.at(c);
+			
+			
+			Rect rect{
+				xpos + g.bearing.x * factor, ypos - (g.size.y - g.bearing.y) * factor,
+				g.size.x * factor, g.size.y * factor
+			};
+
+			DrawRect(rect, font.GetTexture(), color, g.uv);
+
+			xpos += g.advance * factor;
+
+		}
+
+		font.Unbind();
+	}
+
+
+
+#pragma endregion
+
+	void Renderer::Flush()
+	{
+		if (!internal::g_initialized)
+			ThrowError("RENDERER::FLUSH : library was not initialized.");
+
+		if (m_width < 0 || m_height < 0)
+			ThrowError("RENDERER::FLUSH : window size was negative.");
+
+		if (!m_VAO)
+			ThrowError("RENDERER::FLUSH : renderer not initialized.");
+
+		if (m_vertices.empty() || m_indices.empty())
+		{
+			LogWarning("Renderer::Flush : Nothing to draw!");
+			return;
+		}
+
+		if (m_textures.empty())
+		{
+			LogWarning("Renderer::Flush : texture buffer empty.");
+			return;
+		}
+
+		glViewport(0, 0, m_width, m_height);
+
+
+		// Bind shader
+		shader.Use();
+
+		// initializes uniform variables
+		shader.SetMat4("view", camera.GetViewMatrix());
+		shader.SetMat4("projection", GetProjectionMatrix());
+		// set uniform texture sampler
+		// TODO: MAYBE MOVE SOMEWHERE ELSE IF NOT NEEDED EACH FRAME
+		shader.SetIntArray("uTextures", defaults::MAX_TEXTURE_SLOTS, m_samplers);
+
+		size_t quadCountInBatch = 0;
+
+		for (size_t i = 0; i < m_textures.size(); ++i)
+		{
+			float slot = AddTextureToBatch(m_textures[i]);
+			if (slot == -1)
+			{
+				// Batch full, flush current batch
+				RenderBatch();
+				//ClearBatch();
+
+				// Add current texture again (should succeed now)
+				slot = AddTextureToBatch(m_textures[i]);
+				if (slot == -1)
+					ThrowError("RENDERER::FLUSH : texture slot full even after flush.");
+
+				quadCountInBatch = 0;
+			}
+
+			// Add quad vertices with texture slot
+			for (int v = 0; v < 4; ++v)
+			{
+				Vertex vert = m_vertices[i * 4 + v];
+				vert.textureIndex = slot;
+				m_verticesBatch.push_back(vert);
+			}
+
+			// Add quad indices adjusted relative to current batch
+			unsigned int quadVertexStart = i * 4;
+			unsigned int batchVertexStart = quadCountInBatch * 4;
+
+			for (int idx = 0; idx < 6; ++idx)
+			{
+				unsigned int originalIndex = m_indices[i * 6 + idx];
+				unsigned int localIndex = originalIndex - quadVertexStart;
+				m_indicesBatch.push_back(localIndex + batchVertexStart);
+			}
+
+			++quadCountInBatch;
+		}
+
+		if (quadCountInBatch > 0)
+		{
+			RenderBatch();
+		}
+
+
+	}
+
+	void Renderer::RenderBatch()
+	{
+
+		// binding vertex array
+		glBindVertexArray(m_VAO);
+
+		// upload vertex data
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+		glBufferData(GL_ARRAY_BUFFER, m_verticesBatch.size() * sizeof(Vertex), m_verticesBatch.data(), GL_STREAM_DRAW);
+
+		// Upload index data
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indicesBatch.size() * sizeof(unsigned int), m_indicesBatch.data(), GL_STREAM_DRAW);
+
+
+		// draw data
+		glDrawElements(GL_TRIANGLES, m_indicesBatch.size(), GL_UNSIGNED_INT, nullptr);
+
+
+		// Optionally unbind VAO (not strictly needed)
+		glBindVertexArray(0);
+
+		ClearBatch();
+
+		GLenum err = glGetError();
+		if (err != GL_NO_ERROR) {
+			LogError("OpenGL Error in Renderer::RenderBatch() - Code: " + std::to_string(err));
+		}
+
+	}
+
+	float Renderer::AddTextureToBatch(Texture texture)
+	{
+		// check if texture already bound
+		auto it = m_bindedTextures.find(texture.id);
+
+		// if found do not bind
+		if (it != m_bindedTextures.end())
+			return it->second;
+
+		// if binded texture full, render batch
+		if (m_bindedTextures.size() == LittleEngine::defaults::MAX_TEXTURE_SLOTS)
+			return -1;
+
+		// else add to binded textures;
+		int slot = m_bindedTextures.size();
+		m_texturesBatch.push_back(texture);
+		m_bindedTextures[texture.id] = slot;
+		texture.Bind(slot);
+		
+		return (float)slot;
+	
+	}
+
+
+	void Renderer::ClearDrawQueue()
+	{
+		// clear vectors
+		m_vertices.clear();
+		m_indices.clear();
+		m_textures.clear();
+
+		m_quadCount = 0;
+	}
+
+	void Renderer::ClearBatch()
+	{
+		m_verticesBatch.clear();
+		m_indicesBatch.clear();
+		m_bindedTextures.clear();
+		m_texturesBatch.clear();
+	}
+
+	glm::mat4 Renderer::GetProjectionMatrix()
+	{
+		float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+		float halfWidth, halfHeight;
+		if (aspectRatio >= 16.f/9.f)
+		{
+			halfWidth = defaults::viewWidth / 2;
+			halfHeight = halfWidth / aspectRatio;
+		}
+		else
+		{
+			halfHeight = defaults::viewHeight / 2;
+			halfWidth = halfHeight * aspectRatio;
+
+		}
+		// tODO change this
+		//return glm::ortho(0.f, (float)m_width, 0.f, (float)m_height, -1.f, 1.f);	// (0,0) BL, X+ -> right Y+ -> top
+		return glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight, -1.f, 1.f);
+	}
+}
+
+
+
