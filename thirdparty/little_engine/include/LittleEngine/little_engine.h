@@ -29,6 +29,8 @@
 #include "LittleEngine/Graphics/texture.h"
 #include "LittleEngine/Graphics/tilemap_renderer.h"
 #include "LittleEngine/Input/input.h"
+#include "LittleEngine/Audio/audio.h"
+#include "LittleEngine/Audio/sound.h"
 
 #include "LittleEngine/internal.h"
 
@@ -44,6 +46,7 @@
  * draw particle ?
  * optimise renderer flush and batching.
  * better text rendering. (shadow, higlight)
+ * Instancing ? with instanced array ?
  *	
  * INPUT:
  * 
@@ -51,13 +54,18 @@
  * action ok
  * callbacks ok
  * 
+ * getActionStatus ?
+ * 
  * scroll
  * mouse get pos 
  * 
  * 
  * AUDIO:
  * 
- * everything
+ * basic sound ok
+ * background music
+ * load ogg/mp3/...
+ * play same sound multiple time
  * 
  * 
  */

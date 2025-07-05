@@ -21,6 +21,8 @@
 
 #include "input_action.h"
 
+#include "miniaudio.h"
+
 
 namespace game
 {
@@ -30,8 +32,16 @@ namespace game
 
 	bool Game::Initialize()
 	{
-		m_renderer = std::make_unique <LittleEngine::Renderer>();
+		m_renderer = std::make_unique<LittleEngine::Renderer>();
 		m_renderer->Initialize(LittleEngine::GetWindowSize());
+
+		m_audioSystem = std::make_unique<LittleEngine::Audio::AudioSystem>();
+		m_audioSystem->Initialize();
+
+		std::cout << m_audioSystem->IsInitialized(); // ok
+
+		m_audioSystem->LoadSound(RESOURCES_PATH "test.wav", sound);
+
 
 		texture1.LoadFromFile(RESOURCES_PATH "test.jpg");
 		texture2.LoadFromFile(RESOURCES_PATH "awesomeface.png", true, false, true);
@@ -107,6 +117,9 @@ namespace game
 				float f = (rand() % 1000) / 1000.f;
 				m_data.color = f * LittleEngine::Colors::Green;
 				m_data.color.w = 1.f;
+
+				// play sound
+				sound.Play();
 			});
 
 
@@ -194,6 +207,14 @@ namespace game
 		ImGui::SliderFloat("Alpha", &color.w, 0.f, 1.f);
 		ImGui::SliderFloat("scale", &scale, 0.1f, 5.f);
 		ImGui::SliderFloat("speed", &speed, 0.f, 10.f);
+		if (ImGui::SliderFloat("pitch", &pitch, 0.f, 10.f))
+		{
+			sound.SetPitch(pitch);
+		}
+		if (ImGui::SliderFloat("volume", &volume, 0.f, 10.f))
+		{
+			sound.SetVolume(volume);
+		}
 		ImGui::SliderInt("Tilemap Count", &length, 0, 200);
 
 		if (ImGui::Checkbox("wireframe", &w))
@@ -234,6 +255,10 @@ namespace game
 	}
 	void Game::Shutdown()
 	{
+		m_renderer->Shutdown();
+		m_audioSystem->Shutdown();
+		sound.Shutdown();
+
 	//saved the data.
 	// platform::writeEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData));
 	}

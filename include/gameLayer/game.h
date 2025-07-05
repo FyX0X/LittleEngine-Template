@@ -33,8 +33,13 @@ namespace game
 		
 		GameData m_data;
 		std::unique_ptr<LittleEngine::Renderer> m_renderer;
+		std::unique_ptr<LittleEngine::Audio::AudioSystem> m_audioSystem;
 
 		// temporary
+		LittleEngine::Audio::Sound sound;
+		float pitch = 1.f;
+		float volume = 1.f;
+
 		LittleEngine::Texture texture1, texture2;
 		LittleEngine::Texture minecraft_blocks;
 		LittleEngine::TextureAtlas minecraft_atlas;
