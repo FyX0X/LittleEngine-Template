@@ -64,6 +64,10 @@ namespace LittleEngine
 
 	namespace
 	{
+		//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+		//void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
+		//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+		//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		void processInput(GLFWwindow* window);
 		void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 		void PrintStackTrace();
@@ -121,6 +125,11 @@ namespace LittleEngine
 
 		glfwMakeContextCurrent(s_window);
 		glfwSetFramebufferSizeCallback(s_window, framebuffer_size_callback);
+		//glfwSetKeyCallback(s_window, key_callback);
+		//glfwSetMouseButtonCallback(s_window, mouse_button_callback);
+		//glfwSetCursorPosCallback(s_window, cursor_position_callback);
+		//glfwSetScrollCallback(s_window, scroll_callback);
+
 
 
 		// glad: load all OpenGL function pointers
@@ -178,6 +187,7 @@ namespace LittleEngine
 		// create default shader
 		Shader::Initialize();
 		Font::Initialize();
+		Input::Initialize(s_window);
 
 
 	}
@@ -200,8 +210,8 @@ namespace LittleEngine
 			glfwGetWindowSize(s_window, &w, &h);
 
 			// input
-			// -----
-			processInput(s_window);
+			// -----	TODO REMOVE THIS FUNCTION
+			Input::UpdateInputState();
 
 
 #pragma region ImGui NewFrame
@@ -306,8 +316,50 @@ namespace LittleEngine
 	// internal only functions
 	namespace 
 	{
+		//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+		//{
+		//	// xoffset and yoffset indicate scroll amount (e.g. vertical scroll in yoffset)
+		//}
+
+		//void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+		//{
+		//	// xpos and ypos are the new mouse cursor position in window coordinates
+		//	// where (0, 0) is the top left corner and measured in pixels.
+		//}
+
+		//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+		//{
+		//	if (action == GLFW_PRESS)
+		//	{
+		//		// mouse button pressed (e.g. GLFW_MOUSE_BUTTON_LEFT)
+		//	}
+		//	else if (action == GLFW_RELEASE)
+		//	{
+		//		// mouse button released
+		//	}
+		//}
+
+		//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+		//{
+		//	if (action == GLFW_PRESS)
+		//	{
+		//		// key pressed
+		//		std::cout << "press: " << key << "\n";
+		//	}
+		//	else if (action == GLFW_RELEASE)
+		//	{
+		//		// key released
+		//		std::cout << "release: " << key << "\n";
+		//	}
+		//	else if (action == GLFW_REPEAT)
+		//	{
+		//		// key repeated (held down)
+		//		std::cout << "repeat: " << key << "\n";
+		//	}
+		//}
+
 		// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-	// ---------------------------------------------------------------------------------------------------------
+		// ---------------------------------------------------------------------------------------------------------
 		void processInput(GLFWwindow* window)
 		{
 			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)

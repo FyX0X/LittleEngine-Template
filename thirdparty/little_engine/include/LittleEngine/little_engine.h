@@ -28,6 +28,8 @@
 #include "LittleEngine/Graphics/shader.h"
 #include "LittleEngine/Graphics/texture.h"
 #include "LittleEngine/Graphics/tilemap_renderer.h"
+#include "LittleEngine/Input/input.h"
+
 #include "LittleEngine/internal.h"
 
 
@@ -43,13 +45,20 @@
  * optimise renderer flush and batching.
  * better text rendering. (shadow, higlight)
  *	
+ * INPUT:
+ * 
+ * stored keys ok
+ * action ok
+ * callbacks ok
+ * 
+ * scroll
+ * mouse get pos 
+ * 
+ * 
  * AUDIO:
  * 
  * everything
  * 
- * INPUT:
- * 
- * everything
  * 
  */
 
@@ -59,7 +68,7 @@ namespace LittleEngine
 
 	struct EngineConfig
 	{
-		std::string title = "LittleEngine";
+		std::string title = "LittleEngine Game";
 		int windowWidth = 800;
 		int windowHeight = 600;
 		bool vsync = true;

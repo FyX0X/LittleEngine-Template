@@ -19,6 +19,9 @@
 #include <sstream>
 
 
+#include "input_action.h"
+
+
 namespace game
 {
 
@@ -66,6 +69,51 @@ namespace game
 		}
 
 
+		// create key action map for input manager
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_W, InputAction::MoveUp);
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_UP, InputAction::MoveUp);
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_A, InputAction::MoveLeft);
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_LEFT, InputAction::MoveLeft);
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_S, InputAction::MoveDown);
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_DOWN, InputAction::MoveDown);
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_D, InputAction::MoveRight);
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_RIGHT, InputAction::MoveRight);
+
+		LittleEngine::Input::BindKeyToAction(GLFW_KEY_SPACE, InputAction::Jump);
+
+		LittleEngine::Input::BindMouseButtonToAction(GLFW_MOUSE_BUTTON_LEFT, InputAction::Shoot);
+
+		
+
+		// create action command map
+		LittleEngine::Input::BindActionToCommand(InputAction::MoveUp, LittleEngine::Input::InputEventType::Down,
+			[&]() {m_data.rectPos.y += speed;});
+		LittleEngine::Input::BindActionToCommand(InputAction::MoveLeft, LittleEngine::Input::InputEventType::Down,
+			[&]() {m_data.rectPos.x -= speed;});
+		LittleEngine::Input::BindActionToCommand(InputAction::MoveDown, LittleEngine::Input::InputEventType::Down,
+			[&]() {m_data.rectPos.y -= speed;});
+		LittleEngine::Input::BindActionToCommand(InputAction::MoveRight, LittleEngine::Input::InputEventType::Down,
+			[&]() {m_data.rectPos.x += speed;});
+
+
+		LittleEngine::Input::BindActionToCommand(InputAction::Jump, LittleEngine::Input::InputEventType::Pressed,
+			[&]() {m_data.zoom *= 2;});
+		LittleEngine::Input::BindActionToCommand(InputAction::Jump, LittleEngine::Input::InputEventType::Released,
+			[&]() {m_data.zoom /= 2;});
+
+
+		LittleEngine::Input::BindActionToCommand(InputAction::Shoot, LittleEngine::Input::InputEventType::Pressed,
+			[&]() { 
+				float f = (rand() % 1000) / 1000.f;
+				m_data.color = f * LittleEngine::Colors::Green;
+				m_data.color.w = 1.f;
+			});
+
+
+
+
+
+
 		//loading the saved data. Loading an entire structure like this makes savind game data very easy.
 		//platform::readEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData));
 
@@ -83,6 +131,10 @@ namespace game
 		delta = dt;
 
 
+		m_renderer->camera.position = m_data.rectPos;
+		m_renderer->camera.zoom = m_data.zoom;
+
+
 	}
 
 
@@ -95,7 +147,7 @@ namespace game
 		m_renderer->BeginFrame();
 
 		// green block from (-10, -10) to (0 0)
-		m_renderer->DrawRect({ -10, -10, 10 , 10 }, LittleEngine::Colors::Green);
+		m_renderer->DrawRect({ -10, -10, 10 , 10 }, m_data.color);
 
 		// font block from (0, 0) to (15 15)
 		//m_renderer->DrawRect({ 0, 0, 15 , 15 }, font.GetTexture());
@@ -132,14 +184,16 @@ namespace game
 		ImGui::Begin("Debug");
 		ImGui::Text("FPS: %.2f", fps);
 		ImGui::Text("QuadCount: %d", m_renderer->GetQuadCount());
-		ImGui::SliderFloat("Camera Zoom", &m_renderer->camera.zoom, 0.1f, 3.f);
-		ImGui::SliderFloat("Camera x", &m_renderer->camera.position.x, -50.f, 50.f);
-		ImGui::SliderFloat("Camera y", &m_renderer->camera.position.y, -50.f, 50.f);
+		ImGui::Text("DATA: %.1f, %.1f", m_data.rectPos.x, m_data.rectPos.y);
+		ImGui::SliderFloat("Camera Zoom", &m_data.zoom, 0.1f, 3.f);
+		ImGui::SliderFloat("Camera x", &m_data.rectPos.x, -50.f, 50.f);
+		ImGui::SliderFloat("Camera y", &m_data.rectPos.y, -50.f, 50.f);
 		ImGui::SliderFloat("Red", &color.x, 0.f, 1.f);
 		ImGui::SliderFloat("Green", &color.y, 0.f, 1.f);
 		ImGui::SliderFloat("Blue", &color.z, 0.f, 1.f);
 		ImGui::SliderFloat("Alpha", &color.w, 0.f, 1.f);
 		ImGui::SliderFloat("scale", &scale, 0.1f, 5.f);
+		ImGui::SliderFloat("speed", &speed, 0.f, 10.f);
 		ImGui::SliderInt("Tilemap Count", &length, 0, 200);
 
 		if (ImGui::Checkbox("wireframe", &w))

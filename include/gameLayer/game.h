@@ -48,6 +48,8 @@ namespace game
 
 		float delta = 0;
 
+		float speed = 1.f;
+
 		static const unsigned int world[];
 
 		LittleEngine::TilemapRenderer tilemap;
