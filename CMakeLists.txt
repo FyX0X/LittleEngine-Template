@@ -85,6 +85,13 @@ else()
 	# enable IMGUI
 	set(IMGUI_FLAG ENABLE_IMGUI=1)
 
+	# does not work with nija i think
+	## For MSVC compiler only
+	#if (MSVC)
+	#	# Add these flags only for Debug configuration
+	#	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /ZI /Od")
+	#endif()
+
 endif()
 
 target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC ${IMGUI_FLAG})

@@ -53,7 +53,7 @@ namespace game
 
 		float delta = 0;
 
-		float speed = 1.f;
+		float speed = 10.f;
 
 		static const unsigned int world[];
 

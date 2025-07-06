@@ -1,8 +1,6 @@
 #pragma once
 
-#include <unordered_map>
 #include <iostream>
-#include <memory>
 #include <functional>
 #include <GLFW/glfw3.h>
 
@@ -11,14 +9,29 @@ namespace LittleEngine::Input
 {
 	using KeyCode = int;
 	using MouseButton = int;
-	using ActionID = int;
-	using Command = std::function<void()>;
+
+	// represents a float in [-1, 1]
+	using InputAxis = float;
+
+	class Command abstract {
+	public:
+		virtual std::string GetName() const = 0;
+		virtual void OnPress() = 0;
+		virtual void OnRelease() = 0;
+		virtual void OnHold() = 0;
+		virtual ~Command() = default;
+	};
+
+
+
 
 	enum class InputEventType {
 		Pressed,   // Trigger once when the key/button goes down
 		Released,  // Trigger once when the key/button goes up
-		Down       // Trigger continuously every frame while held
+		Down,       // Trigger continuously every frame while held
+		Up
 	};
+
 
 	void Initialize(GLFWwindow* window);
 	void Shutdown();
@@ -28,26 +41,28 @@ namespace LittleEngine::Input
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+	void ResetKeyState();
 	void UpdateInputState();
 
-	void ResetKeyState();
+	float GetAxis(const std::string& name);
 
 	bool IsKeyDown(KeyCode key);
 	bool IsKeyPressed(KeyCode key);
 	bool IsKeyReleased(KeyCode key);
-	
-	bool isActionPressed(ActionID action);
-	bool isActionReleased(ActionID action);
-	bool isActionHeld(ActionID action);
+
 
 	//void HandleInput(const int inputKey);
 
 
-	void BindKeyToAction(KeyCode key, ActionID action);
-	void BindMouseButtonToAction(MouseButton mb, ActionID action);
-	void BindActionToCommand(ActionID action, InputEventType type, Command cmd);
+	void BindKeyToCommand(KeyCode key, std::unique_ptr<Command> cmd);
+	void BindMouseButtonToCommand(MouseButton mb, std::unique_ptr<Command> cmd);
+
+	void RegisterAxis(const std::string& name);
+	void BindKeysToAxis(KeyCode keyPositive, KeyCode keyNegative, const std::string& name);
 
 
+	InputEventType GetInputEventType(bool previous, bool current);
+	void CallCommand(Command* cmd, InputEventType type);
 
 
 

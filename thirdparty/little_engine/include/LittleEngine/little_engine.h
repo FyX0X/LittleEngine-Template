@@ -53,8 +53,11 @@
  * stored keys ok
  * action ok
  * callbacks ok
+ * InputAxis ok
  * 
  * getActionStatus ?
+ * 
+ * bind same key to multiple action
  * 
  * scroll
  * mouse get pos 
@@ -65,7 +68,8 @@
  * basic sound ok
  * background music
  * load ogg/mp3/...
- * play same sound multiple time
+ * play same sound multiple time 
+ * positionnal audio
  * 
  * 
  */

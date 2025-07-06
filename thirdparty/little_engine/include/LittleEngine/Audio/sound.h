@@ -11,7 +11,15 @@ namespace LittleEngine::Audio
 	{
 	public:
 
-		Sound() {};
+		Sound() = default;
+		~Sound() { Shutdown(); }
+
+		// prevent copying cause it breaks ma_sound.
+		Sound(const Sound&) = delete;
+		Sound& operator=(const Sound&) = delete;
+		Sound(Sound&&) = delete;
+		Sound& operator=(Sound&&) = delete;
+
 		
 		void LoadFromFile(const std::string& path, ma_engine& engine);
 		void Shutdown();

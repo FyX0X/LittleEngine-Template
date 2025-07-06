@@ -19,10 +19,6 @@
 #include <sstream>
 
 
-#include "input_action.h"
-
-#include "miniaudio.h"
-
 
 namespace game
 {
@@ -38,10 +34,9 @@ namespace game
 		m_audioSystem = std::make_unique<LittleEngine::Audio::AudioSystem>();
 		m_audioSystem->Initialize();
 
-		std::cout << m_audioSystem->IsInitialized(); // ok
 
+		// load resources
 		m_audioSystem->LoadSound(RESOURCES_PATH "test.wav", sound);
-
 
 		texture1.LoadFromFile(RESOURCES_PATH "test.jpg");
 		texture2.LoadFromFile(RESOURCES_PATH "awesomeface.png", true, false, true);
@@ -79,48 +74,98 @@ namespace game
 		}
 
 
-		// create key action map for input manager
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_W, InputAction::MoveUp);
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_UP, InputAction::MoveUp);
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_A, InputAction::MoveLeft);
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_LEFT, InputAction::MoveLeft);
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_S, InputAction::MoveDown);
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_DOWN, InputAction::MoveDown);
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_D, InputAction::MoveRight);
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_RIGHT, InputAction::MoveRight);
+		// create axis
+		LittleEngine::Input::RegisterAxis("vertical");
+		LittleEngine::Input::RegisterAxis("horizontal");
+		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_W, GLFW_KEY_S, "vertical");
+		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_UP, GLFW_KEY_DOWN, "vertical");
+		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_D, GLFW_KEY_A, "horizontal");
+		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_RIGHT, GLFW_KEY_LEFT, "horizontal");
 
-		LittleEngine::Input::BindKeyToAction(GLFW_KEY_SPACE, InputAction::Jump);
 
-		LittleEngine::Input::BindMouseButtonToAction(GLFW_MOUSE_BUTTON_LEFT, InputAction::Shoot);
+
 
 		
 
 		// create action command map
-		LittleEngine::Input::BindActionToCommand(InputAction::MoveUp, LittleEngine::Input::InputEventType::Down,
-			[&]() {m_data.rectPos.y += speed;});
-		LittleEngine::Input::BindActionToCommand(InputAction::MoveLeft, LittleEngine::Input::InputEventType::Down,
-			[&]() {m_data.rectPos.x -= speed;});
-		LittleEngine::Input::BindActionToCommand(InputAction::MoveDown, LittleEngine::Input::InputEventType::Down,
-			[&]() {m_data.rectPos.y -= speed;});
-		LittleEngine::Input::BindActionToCommand(InputAction::MoveRight, LittleEngine::Input::InputEventType::Down,
-			[&]() {m_data.rectPos.x += speed;});
+		//LittleEngine::Input::BindActionToCommand(InputAction::MoveUp, LittleEngine::Input::InputEventType::Down,
+		//	[&]() {m_data.rectPos.y += speed;});
+		//LittleEngine::Input::BindActionToCommand(InputAction::MoveLeft, LittleEngine::Input::InputEventType::Down,
+		//	[&]() {m_data.rectPos.x -= speed;});
+		//LittleEngine::Input::BindActionToCommand(InputAction::MoveDown, LittleEngine::Input::InputEventType::Down,
+		//	[&]() {m_data.rectPos.y -= speed;});
+		//LittleEngine::Input::BindActionToCommand(InputAction::MoveRight, LittleEngine::Input::InputEventType::Down,
+		//	[&]() {m_data.rectPos.x += speed;});
 
 
-		LittleEngine::Input::BindActionToCommand(InputAction::Jump, LittleEngine::Input::InputEventType::Pressed,
-			[&]() {m_data.zoom *= 2;});
-		LittleEngine::Input::BindActionToCommand(InputAction::Jump, LittleEngine::Input::InputEventType::Released,
-			[&]() {m_data.zoom /= 2;});
+
+		class ZoomCommand : public LittleEngine::Input::Command {
+			float& zoom;
+		public:
+			ZoomCommand(float& zoom) : zoom(zoom) {}
+			std::string GetName() const override { return "Zoom"; }
+			
+			void OnPress() override { zoom *= 2.f; }
+			void OnHold() override {
+				zoom *= 0.99f;
+				if (zoom <= 1)
+					zoom = 1.f;
+			}
+			void OnRelease() override {}
+		};
+
+		class JumpCommand : public LittleEngine::Input::Command {
+			glm::vec2& pos;
+		public:
+			JumpCommand(glm::vec2& pos) : pos(pos) {}
+			std::string GetName() const override { return "Jump"; }
+
+			void OnPress() override { pos.y += 2.f; }
+			void OnRelease() override { pos.y -= 2.f; }
+			void OnHold() override {}
+		};
 
 
-		LittleEngine::Input::BindActionToCommand(InputAction::Shoot, LittleEngine::Input::InputEventType::Pressed,
-			[&]() { 
+		class ColorCommand : public LittleEngine::Input::Command {
+			LittleEngine::Color& color;
+		public:
+			ColorCommand(LittleEngine::Color& c) : color(c) {}
+			std::string GetName() const override { return "Color"; }
+
+			void OnPress() override { 
 				float f = (rand() % 1000) / 1000.f;
-				m_data.color = f * LittleEngine::Colors::Green;
-				m_data.color.w = 1.f;
+				color = f * LittleEngine::Colors::Green;
+				color.w = 1.f;
+			}
+			void OnRelease() override {}
+			void OnHold() override {}
+		};
+
+		class SoundCommand : public LittleEngine::Input::Command {
+			LittleEngine::Audio::Sound& sound;
+		public:
+			SoundCommand(LittleEngine::Audio::Sound& s) : sound(s) {}
+			std::string GetName() const override { return "Sound"; }
+
+			void OnPress() override {
 
 				// play sound
 				sound.Play();
-			});
+			}
+			void OnRelease() override {}
+			void OnHold() override {}
+		};
+
+
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<ColorCommand>(m_data.color));
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<JumpCommand>(m_data.rectPos));
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<SoundCommand>(sound));
+		LittleEngine::Input::BindMouseButtonToCommand(GLFW_MOUSE_BUTTON_LEFT, std::make_unique<ColorCommand>(m_data.color));
+		LittleEngine::Input::BindMouseButtonToCommand(GLFW_MOUSE_BUTTON_RIGHT, std::make_unique<ZoomCommand>(m_data.zoom));
+
+
+
+
 
 
 
@@ -142,6 +187,21 @@ namespace game
 #pragma endregion
 
 		delta = dt;
+
+
+		// check axis input.
+
+		float vert = LittleEngine::Input::GetAxis("vertical");
+		float hori = LittleEngine::Input::GetAxis("horizontal");
+
+		glm::vec2 move = { hori, vert };
+		float length = glm::length(move);
+		if (length > 1)
+			move /= length;
+
+		m_data.rectPos += move * speed * dt;
+
+
 
 
 		m_renderer->camera.position = m_data.rectPos;
@@ -206,7 +266,7 @@ namespace game
 		ImGui::SliderFloat("Blue", &color.z, 0.f, 1.f);
 		ImGui::SliderFloat("Alpha", &color.w, 0.f, 1.f);
 		ImGui::SliderFloat("scale", &scale, 0.1f, 5.f);
-		ImGui::SliderFloat("speed", &speed, 0.f, 10.f);
+		ImGui::SliderFloat("speed", &speed, 0.f, 100.f);
 		if (ImGui::SliderFloat("pitch", &pitch, 0.f, 10.f))
 		{
 			sound.SetPitch(pitch);

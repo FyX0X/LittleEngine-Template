@@ -12,27 +12,35 @@
 #endif // 
 
 
+
+#include <unordered_map>
+#include <memory>
+
 namespace LittleEngine::Input
 {
 
 
-	static std::vector<ActionID> s_keyActionLookup;
-	static std::vector<ActionID> s_mouseButtonActionLookup;
-
-	static std::vector<Command> s_pressedCallbacks;
-	static std::vector<Command> s_heldCallbacks;
-	static std::vector<Command> s_releasedCallbacks;
+	// one vector<Command> for each key. allows for multiple command per key.
+	static std::vector<std::vector<std::unique_ptr<Command>>> s_keyCommandLookup;
+	static std::vector<std::vector<std::unique_ptr<Command>>> s_mouseButtonCommandLookup;
 
 
 	// Keyboard states
 	static std::vector<bool> s_currentKeyState;
 	static std::vector<bool> s_previousKeyState;
 
+
 	// Mouse button states
 	static std::vector<bool> s_currentMouseButtonState;
 	static std::vector<bool> s_previousMouseButtonState;
 
 	static int s_mouseX, s_mouseY;
+
+	// virtual axis
+	// TODO CHANGE FOR VECTOR OR CHANGE REST FOR MAP
+	static std::unordered_map<KeyCode, std::string> s_posKeyMap;
+	static std::unordered_map<KeyCode, std::string> s_negKeyMap;
+	static std::unordered_map<std::string, InputAxis> s_axices;
 
 
 
@@ -46,8 +54,8 @@ namespace LittleEngine::Input
 
 		ResetKeyState();
 
-		s_keyActionLookup.resize(GLFW_KEY_LAST, -1);
-		s_mouseButtonActionLookup.resize(GLFW_MOUSE_BUTTON_LAST, -1);
+		s_keyCommandLookup.resize(GLFW_KEY_LAST);
+		s_mouseButtonCommandLookup.resize(GLFW_MOUSE_BUTTON_LAST);
 
 	}
 
@@ -123,55 +131,140 @@ namespace LittleEngine::Input
 
 	void UpdateInputState()
 	{
+		
+		// reset all axis;
+		for (auto& [key, value] : s_axices)
+		{
+			value = 0.f;
+		}
+
 
 		// Keys
-		for (int key = 0; key < s_keyActionLookup.size(); ++key)
+		for (int key = 0; key < s_keyCommandLookup.size(); ++key)
 		{
 			bool current = s_currentKeyState[key];
 			bool previous = s_previousKeyState[key];
+			
+			// update axis.
+			if (current)
+			{
+				auto it = s_posKeyMap.find(key);
+				if (it != s_posKeyMap.end()) // found
+				{
+					s_axices[it->second] += 1.f;
+				}
+				it = s_negKeyMap.find(key);
+				if (it != s_negKeyMap.end()) // found
+				{
+					s_axices[it->second] -= 1.f;
+				}
+			}
 
-			if (key >= s_keyActionLookup.size()) continue;
+			// call key press, release, hold callbacks
+			if (key >= s_keyCommandLookup.size()) continue;
 
-			ActionID action = s_keyActionLookup[key];
-			if (action == -1) continue;
+			std::vector<std::unique_ptr<Command>>& cmds = s_keyCommandLookup[key];
+			if (cmds.empty()) continue;
 
-			// Pressed
-			if (!previous && current && action < s_pressedCallbacks.size() && s_pressedCallbacks[action])
-				s_pressedCallbacks[action]();
 
-			// Held
-			if (previous && current && action < s_heldCallbacks.size() && s_heldCallbacks[action])
-				s_heldCallbacks[action]();
+			InputEventType type = GetInputEventType(previous, current);
 
-			// Released
-			if (previous && !current && action < s_releasedCallbacks.size() && s_releasedCallbacks[action])
-				s_releasedCallbacks[action]();
+
+			for (size_t i = 0; i < cmds.size(); i++)
+			{
+				CallCommand(cmds[i].get(), type);
+			}
+
+
 		}
 
 		// Same for mouse buttons...
-		for (int btn = 0; btn < s_mouseButtonActionLookup.size(); ++btn)
+		for (int btn = 0; btn < s_mouseButtonCommandLookup.size(); ++btn)
 		{
 			bool current = s_currentMouseButtonState[btn];
 			bool previous = s_previousMouseButtonState[btn];
 
-			if (btn >= s_mouseButtonActionLookup.size()) continue;
+			if (btn >= s_mouseButtonCommandLookup.size()) continue;
 
-			ActionID action = s_mouseButtonActionLookup[btn];
-			if (action == -1) continue;
+			std::vector<std::unique_ptr<Command>>& cmds = s_mouseButtonCommandLookup[btn];
+			if (cmds.empty()) continue;
 
-			if (!previous && current && action < s_pressedCallbacks.size() && s_pressedCallbacks[action])
-				s_pressedCallbacks[action]();
+			InputEventType type = GetInputEventType(previous, current);
+			
+			for (size_t i = 0; i < cmds.size(); i++)
+			{
+				CallCommand(cmds[i].get(), type);
+			}
+		}
 
-			if (previous && current && action < s_heldCallbacks.size() && s_heldCallbacks[action])
-				s_heldCallbacks[action]();
-
-			if (previous && !current && action < s_releasedCallbacks.size() && s_releasedCallbacks[action])
-				s_releasedCallbacks[action]();
+		// clamp axices
+		for (auto& [key, value] : s_axices)
+		{
+			if (value > 1)
+				value = 1.f;
+			else if (value < -1)
+				value = -1.f;
 		}
 
 		// for next frame
 		s_previousKeyState = s_currentKeyState;
 		s_previousMouseButtonState = s_currentMouseButtonState;
+
+		
+	}
+
+	InputEventType GetInputEventType(bool previous, bool current)
+	{
+		if (!previous && current)
+			return InputEventType::Pressed;
+
+		if (previous && current)
+			return InputEventType::Down;
+
+		if (previous && !current)
+			return InputEventType::Released;
+
+		return InputEventType::Up;
+
+	}
+
+	void CallCommand(Command* cmd, InputEventType type)
+	{
+
+		if (cmd == nullptr) 
+		{
+			LogError("Input::CallCommand: Command is nullptr.");
+			return;
+		}
+
+		switch (type)
+		{
+		case LittleEngine::Input::InputEventType::Pressed:
+			cmd->OnPress();
+			break;
+		case LittleEngine::Input::InputEventType::Released:
+			cmd->OnRelease();
+			break;
+		case LittleEngine::Input::InputEventType::Down:
+			cmd->OnHold();
+			break;
+		default:
+			//LogWarning("Input::CallAction: unknown input event type.");
+			break;
+		}
+	
+	}
+
+	float GetAxis(const std::string& name)
+	{
+		auto it = s_axices.find(name);
+		if (it != s_axices.end())	// found
+		{
+			return it->second;
+		}
+		LogError("Input::GetAxis: No axis with name: " + name);
+		return 0;
+
 	}
 
 #pragma region helper functions.
@@ -193,62 +286,76 @@ namespace LittleEngine::Input
 		return !s_currentKeyState[key] && s_previousKeyState[key];
 	}
 
-	bool isActionPressed(ActionID action)
-	{
-		LogError("NYI");
-		return false;
-	}
-
-	bool isActionReleased(ActionID action)
-	{
-		LogError("NYI");
-		return false;
-	}
-
-	bool isActionHeld(ActionID action)
-	{
-		LogError("NYI");
-		return false;
-	}
 
 #pragma endregion
 
-	void BindKeyToAction(KeyCode key, ActionID action)
+	void BindKeyToCommand(KeyCode key, std::unique_ptr<Command> cmd)
 	{
 		if (key < 0 || key > GLFW_KEY_LAST)
 		{
-			LogError("Input::BindKeyToAction: invalid key: " + std::to_string(key));
+			LogError("Input::BindKeyToCommand: invalid key: " + std::to_string(key));
 			return;
 		}
-		s_keyActionLookup[key] = action;
+
+		// check if action already binded to key.
+		auto& cmds = s_keyCommandLookup[key];
+		for (size_t i = 0; i < cmds.size(); i++)
+		{
+			if (typeid(*cmds[i]) == typeid(*cmd))		// *cmd and not cmd.get() to dereference and get Actual type (not Command)
+			{
+				LogError("Input::BindKeyToCommand: Command " + cmd->GetName() + " already binded to key: " + std::to_string(key));
+				return;
+			}
+		}
+		cmds.push_back(std::move(cmd));
 	}
 
-	void BindMouseButtonToAction(MouseButton mb, ActionID action)
+	void BindMouseButtonToCommand(MouseButton mb, std::unique_ptr<Command> cmd)
 	{
 		if (mb < 0 || mb > GLFW_MOUSE_BUTTON_LAST)
 		{
-			LogError("Input::BindMouseButtonToAction: invalid mouse button: " + std::to_string(mb));
+			LogError("Input::BindMouseButtonToCommand: invalid mouse button: " + std::to_string(mb));
 			return;
 		}
-		s_mouseButtonActionLookup[mb] = action;
+		// check if action already binded to mouse button.
+		auto& cmds = s_mouseButtonCommandLookup[mb];
+		for (size_t i = 0; i < cmds.size(); i++)
+		{
+			if (typeid(*cmds[i]) == typeid(*cmd))
+			{
+				LogError("Input::BindMouseButtonToCommand: command: " + cmd->GetName() + " already binded to mouse button: " + std::to_string(mb));
+				return;
+			}
+		}
+		cmds.push_back(std::move(cmd));
 	}
 
-	void BindActionToCommand(ActionID action, InputEventType type, Command cmd)
+	void RegisterAxis(const std::string& name)
 	{
-		auto& callbacks = [&]() -> std::vector<Command>&{
-				switch (type) {
-				case InputEventType::Pressed: return s_pressedCallbacks;
-				case InputEventType::Down:    return s_heldCallbacks;
-				case InputEventType::Released:return s_releasedCallbacks;
-				default: LogError("Input::BindActionToCommand: Unknown event type");
-				}
-			}();
+		auto it = s_axices.find(name);
+		if (it == s_axices.end())	// not found
+		{
+			s_axices[name] = 0;
+		}
+		else 
+		{
+			LogError("Input::RegisterAxis: Axis '" + name + "' already exists.");
+		}
+	}
 
+	void BindKeysToAxis(KeyCode keyPositive, KeyCode keyNegative, const std::string& name)
+	{
 
-		if (action >= callbacks.size())
-			callbacks.resize(action + 1);
+		if (s_axices.find(name) == s_axices.end())	// not found
+		{
+			LogError("Input::BindKeysToAxis: axis '" + name + "' does not exists.");
+			return;
+		}
 
-		callbacks[action] = std::move(cmd);
+		s_posKeyMap[keyPositive] = name;
+		s_negKeyMap[keyNegative] = name;
+
+		
 	}
 
 

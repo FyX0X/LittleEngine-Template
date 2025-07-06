@@ -10,6 +10,14 @@ namespace LittleEngine::Audio
 	class AudioSystem
 	{
 	public:
+		AudioSystem() = default;
+		~AudioSystem() { Shutdown(); }
+
+		// prevent copy because ma_engine is not movable (internal state pointers)
+		AudioSystem(const AudioSystem&) = delete;
+		AudioSystem& operator=(const AudioSystem&) = delete;
+		AudioSystem(AudioSystem&&) = delete;
+		AudioSystem& operator=(AudioSystem&&) = delete;
 		
 		void Initialize();
 		void Shutdown();
