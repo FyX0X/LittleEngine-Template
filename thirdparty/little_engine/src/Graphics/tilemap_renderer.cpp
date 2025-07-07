@@ -35,9 +35,10 @@ namespace LittleEngine::Graphics
 
 	void TilemapRenderer::DrawMap(const unsigned int* map, int width, int height, glm::vec2 pos, Renderer* renderer)
 	{
-		for (int x = 0; x < width; x++)
+
+		for (int y = 0; y < height; y++)
 		{
-			for (int y = 0; y < height; y++)
+			for (int x = 0; x < width; x++)
 			{
 				Rect tileRect = {
 					pos.x + x * m_tileSize, pos.y + y * m_tileSize,
