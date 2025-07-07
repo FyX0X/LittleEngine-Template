@@ -4,7 +4,7 @@
 #include "LittleEngine/internal.h"
 #include <string>
 
-namespace LittleEngine
+namespace LittleEngine::Graphics
 {
 #pragma region Texture
 
@@ -13,6 +13,7 @@ namespace LittleEngine
 	public:
 		GLuint id = 0;
 
+		void CreateEmptyTexture(int width, int height, int channelCount);
 		void LoadFromFile(const std::string& path, bool pixelated = defaults::pixelated, bool mipmaps = defaults::mipmaps, bool verticalFlip = false);
 		void LoadFromData(const unsigned char* data, int width, int height, int channelCount = 4, bool pixelated = defaults::pixelated, bool mipmaps = defaults::mipmaps, bool verticalFlip = false);
 		//glm::ivec2 GetSize();

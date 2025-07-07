@@ -1,9 +1,9 @@
 #include "LittleEngine/Graphics/tilemap_renderer.h"
 
 
-namespace LittleEngine
+namespace LittleEngine::Graphics
 {
-
+#pragma region Setters
 
 	void TilemapRenderer::SetTileSetTexture(const Texture& texture, const TextureAtlas& atlas)
 	{
@@ -18,6 +18,10 @@ namespace LittleEngine
 		m_height = height;
 		m_pos = pos;
 	}
+
+#pragma endregion
+
+#pragma region Drawing
 
 	void TilemapRenderer::Draw(Renderer* renderer)
 	{
@@ -46,5 +50,7 @@ namespace LittleEngine
 			}
 		}
 	}
+
+#pragma endregion
 
 }

@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 
 
-namespace LittleEngine
+namespace LittleEngine::Graphics
 {
 
 	using Color = glm::vec4;

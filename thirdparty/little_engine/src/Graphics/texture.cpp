@@ -6,12 +6,59 @@
 
 
 
-namespace LittleEngine
+namespace LittleEngine::Graphics
 {
 
     GLuint Texture::s_defaultTexId = 0;
 
-	void Texture::LoadFromFile(const std::string& path, bool pixelated, bool mipmaps, bool verticalFlip)
+#pragma region Loading / lifetime management.
+
+    void Texture::CreateEmptyTexture(int width, int height, int channelCount)
+    {
+        if (id != 0)
+            glDeleteTextures(1, &id);
+        glGenTextures(1, &id);
+        Bind();
+        // set the texture wrapping parameters
+            
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        int channelType = -1;
+
+        switch (channelCount)
+        {
+        default:
+            LogError("Texture::LoadFromData : allowed channelCount are {1, 2, 3, 4} but " + std::to_string(channelCount) + " was found.");
+            break;
+        case 1:
+            channelType = GL_RED;
+            break;
+        case 2:
+            channelType = GL_RG;
+            break;
+        case 3:
+            channelType = GL_RGB;
+            break;
+        case 4:
+            channelType = GL_RGBA;
+            break;
+
+        }
+        glTexImage2D(GL_TEXTURE_2D, 0, channelType, width, height, 0, channelType, GL_UNSIGNED_BYTE, NULL);
+        
+
+        if (channelCount == 1)
+        {
+            GLint swizzleMask[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED }; // RGB = 1.0 (white), A = red channel
+            glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+        }
+
+
+        Unbind();
+    }
+
+    void Texture::LoadFromFile(const std::string& path, bool pixelated, bool mipmaps, bool verticalFlip)
 	{
         // load image, create texture and generate mipmaps
         int width, height, nrChannels;
@@ -111,7 +158,14 @@ namespace LittleEngine
         Unbind();
     }
 
+    void Texture::Cleanup()
+    {
+        glDeleteTextures(1, &id);
+        *this = {};
+    }
+#pragma endregion
 
+#pragma region Binding
 
     void Texture::Bind(const unsigned int sample) const
     {
@@ -134,10 +188,13 @@ namespace LittleEngine
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void Texture::Cleanup()
+#pragma endregion
+
+#pragma region Getters
+
+    glm::vec4 TextureAtlas::GetUV(int x, int y)
     {
-        glDeleteTextures(1, &id);
-        *this = {};
+        return glm::vec4(x * xCountInv, y * yCountInv, (x + 1) * xCountInv, (y + 1) * yCountInv);
     }
 
     Texture Texture::GetDefaultTexture()
@@ -148,6 +205,27 @@ namespace LittleEngine
         Texture def;
         def.id = s_defaultTexId;
         return def;
+    }
+
+#pragma endregion
+
+#pragma region Helper
+
+    void Texture::FlipBitmapVertically(unsigned char* bitmap, int width, int height, int pixelSize)
+    {
+        int stride = width * pixelSize; // 1 byte per pixel (GL_RED or GL_RGBA...)
+        std::vector<unsigned char> tempRow(stride);
+
+        for (int y = 0; y < height / 2; ++y)
+        {
+            unsigned char* rowTop = bitmap + y * stride;
+            unsigned char* rowBottom = bitmap + (height - 1 - y) * stride;
+
+            // swap rows
+            memcpy(tempRow.data(), rowTop, stride);
+            memcpy(rowTop, rowBottom, stride);
+            memcpy(rowBottom, tempRow.data(), stride);
+        }
     }
 
     void Texture::CreateDefaultTexture()
@@ -177,28 +255,7 @@ namespace LittleEngine
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void Texture::FlipBitmapVertically(unsigned char* bitmap, int width, int height, int pixelSize)
-    {
-        int stride = width * pixelSize; // 1 byte per pixel (GL_RED or GL_RGBA...)
-        std::vector<unsigned char> tempRow(stride);
+#pragma endregion
 
-        for (int y = 0; y < height / 2; ++y)
-        {
-            unsigned char* rowTop = bitmap + y * stride;
-            unsigned char* rowBottom = bitmap + (height - 1 - y) * stride;
-
-            // swap rows
-            memcpy(tempRow.data(), rowTop, stride);
-            memcpy(rowTop, rowBottom, stride);
-            memcpy(rowBottom, tempRow.data(), stride);
-        }
-    }
-
-
-
-    glm::vec4 TextureAtlas::GetUV(int x, int y)
-    {
-        return glm::vec4(x * xCountInv, y * yCountInv, (x + 1) * xCountInv, (y + 1) * yCountInv);
-    }
 
 }

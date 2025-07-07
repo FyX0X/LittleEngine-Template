@@ -40,6 +40,11 @@
 #include <chrono>
 
 
+// remove
+#include <thread>
+
+
+
 //if you are not using visual studio make shure you link to "Opengl32.lib"
 #ifdef _MSC_VER
 #pragma warning( push )
@@ -52,16 +57,12 @@ using Clock = std::chrono::high_resolution_clock;
 using TimePoint = std::chrono::time_point<Clock>;
 
 
-// settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
-
-
 namespace LittleEngine
 {
 	static GLFWwindow* s_window = {};
 	static ResizeCallback s_windowResizeCallback = nullptr;
 
+#pragma region function pre definition;
 	namespace
 	{
 		//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -79,6 +80,10 @@ namespace LittleEngine
 			const char* message,
 			const void* userParam);
 	}
+
+#pragma endregion
+
+#pragma region Library Management
 
 	int Initialize(const EngineConfig& config)
 	{
@@ -125,10 +130,7 @@ namespace LittleEngine
 
 		glfwMakeContextCurrent(s_window);
 		glfwSetFramebufferSizeCallback(s_window, framebuffer_size_callback);
-		//glfwSetKeyCallback(s_window, key_callback);
-		//glfwSetMouseButtonCallback(s_window, mouse_button_callback);
-		//glfwSetCursorPosCallback(s_window, cursor_position_callback);
-		//glfwSetScrollCallback(s_window, scroll_callback);
+
 
 
 
@@ -185,24 +187,50 @@ namespace LittleEngine
 
 
 		// create default shader
-		Shader::Initialize();
-		Font::Initialize();
+		Graphics::Shader::Initialize();
+		Graphics::Font::Initialize();
 		Input::Initialize(s_window);
 
+		return 0;
 
 	}
+
+
+	void Shutdown()
+	{
+
+#if ENABLE_IMGUI == 1
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+#endif
+
+		// glfw: terminate, clearing all previously allocated GLFW resources.
+		// ------------------------------------------------------------------
+		glfwTerminate();
+	}
+
+
+#pragma endregion
+
+#pragma region MainLoop
 
 	void Run(const std::function<void(float)>& update, const std::function<void()>& render)
 	{
 
 
 		TimePoint lastTime = Clock::now();
+		TimePoint firstTime = lastTime;
+
+		int frameCount = 0;
 
 
 		// render loop
 		// -----------
 		while (!glfwWindowShouldClose(s_window))
 		{
+			frameCount++;			// TODO REMOVE THIS WHEN NOT NEEDED
+
 			// INIT
 			// -----
 
@@ -210,7 +238,7 @@ namespace LittleEngine
 			glfwGetWindowSize(s_window, &w, &h);
 
 			// input
-			// -----	TODO REMOVE THIS FUNCTION
+			// -----
 			Input::UpdateInputState();
 
 
@@ -225,11 +253,29 @@ namespace LittleEngine
 #pragma endregion
 
 
-			// deltaTime TODO
+			// deltaTime
 			// ------
 
 			TimePoint currentTime = Clock::now();
 			std::chrono::duration<float> delta = currentTime - lastTime;
+
+
+			//// Sleep if we're early
+			//const float targetFrameTime = 1.f / 400.f;
+			//std::chrono::duration<float> remaining = std::chrono::duration<float>(targetFrameTime) - delta;
+			//if (remaining.count() > 0.f)
+			//{
+			//	// Sleep most of it
+			//	std::this_thread::sleep_for(remaining - std::chrono::milliseconds(1));
+
+			//	// Busy-wait the rest (for precision)
+			//	do {
+			//		currentTime = Clock::now();
+			//		delta = currentTime - lastTime;
+			//	} while (delta.count() < targetFrameTime);
+			//}
+				
+
 			lastTime = currentTime;
 
 			update(delta.count());
@@ -256,23 +302,15 @@ namespace LittleEngine
 		}
 
 
+		std::chrono::duration<float> totalTime = lastTime - firstTime;
+		std::cout << "Total average fps: " << (float)frameCount / totalTime.count();
+
+
 	}
 
+#pragma endregion
 
-
-	void Shutdown()
-	{
-
-#if ENABLE_IMGUI == 1
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
-#endif
-
-		// glfw: terminate, clearing all previously allocated GLFW resources.
-		// ------------------------------------------------------------------
-		glfwTerminate();
-	}
+#pragma region Getters
 
 	glm::ivec2 GetWindowSize()
 	{
@@ -281,19 +319,23 @@ namespace LittleEngine
 		return glm::ivec2(w, h);
 	}
 
+#pragma endregion
+
+#pragma region Setters
 
 	void SetWindowResizeCallback(ResizeCallback callback)
 	{
 		s_windowResizeCallback = callback;
 	}
 
+#pragma endregion
+
 #pragma region Render options
 
 
 	void SetVsync(bool b)
 	{
-		//LogWarning("LittleEngine::SetVsync: Not yet implemented.");
-		glfwSwapInterval(b);			//#TODO
+		glfwSwapInterval(b);
 	}
 
 	void SetWireframe(bool b)
@@ -310,53 +352,11 @@ namespace LittleEngine
 
 #pragma endregion
 
-
 #pragma region Internal
 
 	// internal only functions
 	namespace 
 	{
-		//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-		//{
-		//	// xoffset and yoffset indicate scroll amount (e.g. vertical scroll in yoffset)
-		//}
-
-		//void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
-		//{
-		//	// xpos and ypos are the new mouse cursor position in window coordinates
-		//	// where (0, 0) is the top left corner and measured in pixels.
-		//}
-
-		//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-		//{
-		//	if (action == GLFW_PRESS)
-		//	{
-		//		// mouse button pressed (e.g. GLFW_MOUSE_BUTTON_LEFT)
-		//	}
-		//	else if (action == GLFW_RELEASE)
-		//	{
-		//		// mouse button released
-		//	}
-		//}
-
-		//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-		//{
-		//	if (action == GLFW_PRESS)
-		//	{
-		//		// key pressed
-		//		std::cout << "press: " << key << "\n";
-		//	}
-		//	else if (action == GLFW_RELEASE)
-		//	{
-		//		// key released
-		//		std::cout << "release: " << key << "\n";
-		//	}
-		//	else if (action == GLFW_REPEAT)
-		//	{
-		//		// key repeated (held down)
-		//		std::cout << "repeat: " << key << "\n";
-		//	}
-		//}
 
 		// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 		// ---------------------------------------------------------------------------------------------------------

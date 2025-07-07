@@ -31,22 +31,4 @@ namespace LittleEngine
 		exit(1);
 	}
 
-	inline bool LogAssert(bool condition, const std::string& msg = "")
-	{
-		if (!condition)
-		{
-			LogError(msg);
-		}
-		return condition;
-
-	}
-
-	inline void ThrowAssert(bool condition, const std::string& msg = "")
-	{
-		if (!condition)
-		{
-			ThrowError(msg);
-		}
-
-	}
 }

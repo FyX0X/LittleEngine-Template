@@ -36,33 +36,31 @@ namespace LittleEngine::Input
 	void Initialize(GLFWwindow* window);
 	void Shutdown();
 
-	void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-	void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
-	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
-	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
-	void ResetKeyState();
 	void UpdateInputState();
 
-	float GetAxis(const std::string& name);
+	InputEventType GetInputEventType(bool previous, bool current);
+	void CallCommand(Command* cmd, InputEventType type);
+	void UpdateAxis(KeyCode key);
 
+	void ResetKeyState();
+
+	float GetAxis(const std::string& name);
 	bool IsKeyDown(KeyCode key);
 	bool IsKeyPressed(KeyCode key);
 	bool IsKeyReleased(KeyCode key);
 
 
-	//void HandleInput(const int inputKey);
-
-
+	void RegisterAxis(const std::string& name);
+	void BindKeysToAxis(KeyCode keyPositive, KeyCode keyNegative, const std::string& name);
 	void BindKeyToCommand(KeyCode key, std::unique_ptr<Command> cmd);
 	void BindMouseButtonToCommand(MouseButton mb, std::unique_ptr<Command> cmd);
 
-	void RegisterAxis(const std::string& name);
-	void BindKeysToAxis(KeyCode keyPositive, KeyCode keyNegative, const std::string& name);
 
-
-	InputEventType GetInputEventType(bool previous, bool current);
-	void CallCommand(Command* cmd, InputEventType type);
+	void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+	void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
+	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+	void focus_callback(GLFWwindow* window, int focused);
 
 
 

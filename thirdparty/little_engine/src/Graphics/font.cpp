@@ -7,11 +7,13 @@
 #undef max
 
 
-namespace LittleEngine
+namespace LittleEngine::Graphics
 {
 
 	bool Font::s_initialized = false;
 	FT_Library Font::s_ft = 0;
+
+#pragma region Intitialization / loading
 
 	void Font::Initialize()
 	{
@@ -28,6 +30,7 @@ namespace LittleEngine
 
 
 	}
+
 	void Font::LoadFromTTF(const std::string& path, int size, bool pixelated)
 	{
 		if (FT_New_Face(s_ft, path.c_str(), 0, &m_face))
@@ -62,9 +65,15 @@ namespace LittleEngine
 
 	}
 
-	const GlyphInfo& Font::GetGlyph(char c) const
+#pragma endregion
+
+#pragma region Getters
+
+	const GlyphInfo* Font::GetGlyph(unsigned char c) const
 	{
-		return m_glyphMap.at(c);
+		if (m_isCharPresent[c])
+			return &m_glyphs[c];
+		return nullptr;
 	}
 
 	Font Font::GetDefaultFont(float size)
@@ -73,6 +82,10 @@ namespace LittleEngine
 		def.LoadFromData(defaultFontTTF, sizeof(defaultFontTTF), size, true);
 		return def;
 	}
+
+#pragma endregion
+
+#pragma region Helper
 
 	void Font::GenerateAtlas(bool pixelated)
 	{
@@ -84,6 +97,7 @@ namespace LittleEngine
 
 
 		int x = 0, y = 0, rowHeight = 0;
+
 
 		for (char c = 32; c < 127; ++c) {
 			if (FT_Load_Char(m_face, c, FT_LOAD_RENDER)) continue;
@@ -117,7 +131,9 @@ namespace LittleEngine
 				(x + bmp.width) / (float)atlasWidth, 1.f - y / (float)atlasHeight
 			};*/
 
-			m_glyphMap[c] = info;
+			m_glyphs[c] = info;
+			m_isCharPresent[c] = true;
+
 
 			x += bmp.width + 1;
 			rowHeight = std::max(rowHeight, (int)bmp.rows);
@@ -132,5 +148,7 @@ namespace LittleEngine
 		delete[] atlasPixels;
 		FT_Done_Face(m_face);
 	}
+
+#pragma endregion
 
 }

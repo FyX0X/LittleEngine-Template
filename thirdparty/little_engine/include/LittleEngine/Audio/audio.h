@@ -1,7 +1,9 @@
 #pragma once
 
 #include <miniaudio.h>
+#include <glm/glm.hpp>
 #include "LittleEngine/Audio/sound.h"
+
 
 
 namespace LittleEngine::Audio
@@ -25,7 +27,13 @@ namespace LittleEngine::Audio
 		ma_engine* GetEngine();
 		bool IsInitialized() const { return m_initialized; }
 
-		void LoadSound(const std::string& path, Sound& sound);
+		void LoadSound(const std::string& path, Sound& sound, bool spatialized = false);
+
+		void SetListenerPosition(glm::vec2 pos)
+		{
+			SetListenerPosition(pos.x, pos.y);
+		}
+		void SetListenerPosition(float x, float y, float z = 0.f);
 
 
 	private:

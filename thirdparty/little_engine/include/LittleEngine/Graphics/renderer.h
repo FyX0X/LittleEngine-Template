@@ -4,11 +4,13 @@
 #include "LittleEngine/Graphics/color.h"
 #include "LittleEngine/Graphics/texture.h"
 #include "LittleEngine/Graphics/font.h"
+#include "LittleEngine/Graphics/render_target.h"
 #include <vector>
+#include <array>
 #include <unordered_map>
 
 
-namespace LittleEngine
+namespace LittleEngine::Graphics
 {
 	// Represents a rectangle {x, y, w, h} where x, y is the bottom left position.
 	using Rect = glm::vec4;
@@ -43,7 +45,12 @@ namespace LittleEngine
 		}
 		void UpdateWindowSize(int w, int h);
 
-
+		/**
+		 * Sets the current RenderTarget
+		 * 
+		 * @param: target: The render target, (defaults to the screen if = nullptr) 
+		 */
+		void SetRenderTarget(RenderTarget* target = nullptr);
 		void BeginFrame();
 		void EndFrame();
 
@@ -88,12 +95,12 @@ namespace LittleEngine
 		Camera camera = {};
 		Shader shader;
 
+		void Flush();
 	private:
 		// TODO REFACTOR AUTO FLUSH IF FULL NOT AT END
-		void Flush();
 		// FLUSH BATCH IF: > 16 textures || #indices > 65536 (or > 10K quads)
 		void RenderBatch();
-		float AddTextureToBatch(Texture texture);
+		int AddTextureToBatch(Texture texture);
 		void ClearDrawQueue();
 		void ClearBatch();
 		glm::mat4 GetProjectionMatrix();
@@ -112,14 +119,15 @@ namespace LittleEngine
 		GLuint m_VBO = 0;
 		GLuint m_EBO = 0;
 
+		RenderTarget* m_renderTarget = nullptr;
 
 		std::vector<Vertex> m_vertices;
 		std::vector<Vertex> m_verticesBatch;
 		std::vector<unsigned int> m_indices;
 		std::vector<unsigned int> m_indicesBatch;
 		std::vector<Texture> m_textures;
-		std::vector<Texture> m_texturesBatch;
-		std::unordered_map<GLuint, int> m_bindedTextures;
+		std::array<Texture, defaults::MAX_TEXTURE_SLOTS> m_texturesBatch;
+		int m_bindedTextureCount = 0;
 
 
 		// uniform texture sampler

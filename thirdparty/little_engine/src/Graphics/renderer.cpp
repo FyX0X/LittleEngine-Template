@@ -9,7 +9,7 @@
 #include <sstream>
 
 
-namespace LittleEngine
+namespace LittleEngine::Graphics
 {
 
 	Texture Renderer::s_defaultTexture = Texture();
@@ -104,26 +104,15 @@ namespace LittleEngine
 
 #pragma endregion
 
+#pragma region Callback
+
 	void Renderer::UpdateWindowSize(int w, int h)
 	{
 		m_width = w;
 		m_height = h;
 	}
 
-	void Renderer::BeginFrame()
-	{
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		
-		
-		ClearDrawQueue();
-
-	}
-	void Renderer::EndFrame()
-	{
-		Flush(); // render everything queued
-	}
-
+#pragma endregion
 
 #pragma region Draw functions
 
@@ -150,6 +139,7 @@ namespace LittleEngine
 		glm::vec2 uv3{ uv.x, uv.w };		// top left
 
 		// TODO ADD ROTATION LATER
+		// MAYBE 
 
 		Vertex v0 = { p0, uv0, colors[0], texture.id};
 		Vertex v1 = { p1, uv1, colors[1], texture.id};
@@ -201,31 +191,56 @@ namespace LittleEngine
 				ypos -= scale;
 				continue;
 			}
-			const auto glyphs = font.GetGlyphs();
-			if (glyphs.find(c) == glyphs.end()) 
-				continue;
 
-			const GlyphInfo& g = glyphs.at(c);
+			const GlyphInfo* g = font.GetGlyph(c);
 			
+			if (g == nullptr)
+				continue;
+						
 			
 			Rect rect{
-				xpos + g.bearing.x * factor, ypos - (g.size.y - g.bearing.y) * factor,
-				g.size.x * factor, g.size.y * factor
+				xpos + g->bearing.x * factor, ypos - (g->size.y - g->bearing.y) * factor,
+				g->size.x * factor, g->size.y * factor
 			};
 
-			DrawRect(rect, font.GetTexture(), color, g.uv);
+			DrawRect(rect, font.GetTexture(), color, g->uv);
 
-			xpos += g.advance * factor;
+			xpos += g->advance * factor;
 
 		}
 
 		font.Unbind();
 	}
 
-
-
 #pragma endregion
 
+#pragma region Frame
+
+	void Renderer::SetRenderTarget(RenderTarget* target)
+	{
+		if (!m_indices.empty())
+		{
+			Flush();	// flush to previous render Target.
+		}
+
+		m_renderTarget = target;
+	}
+
+	void Renderer::BeginFrame()
+	{
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		
+		
+		ClearDrawQueue();
+
+	}
+
+	void Renderer::EndFrame()
+	{
+		Flush(); // render everything queued
+	}
+	
 	void Renderer::Flush()
 	{
 		if (!internal::g_initialized)
@@ -249,8 +264,16 @@ namespace LittleEngine
 			return;
 		}
 
-		glViewport(0, 0, m_width, m_height);
-
+		if (m_renderTarget == nullptr)	// draw to screen
+		{
+			glViewport(0, 0, m_width, m_height);
+		}
+		else
+		{
+			glm::ivec2 size = m_renderTarget->GetSize();
+			glViewport(0, 0, size.x, size.y);
+			m_renderTarget->Bind();
+		}
 
 		// Bind shader
 		shader.Use();
@@ -266,7 +289,7 @@ namespace LittleEngine
 
 		for (size_t i = 0; i < m_textures.size(); ++i)
 		{
-			float slot = AddTextureToBatch(m_textures[i]);
+			int slot = AddTextureToBatch(m_textures[i]);
 			if (slot == -1)
 			{
 				// Batch full, flush current batch
@@ -285,7 +308,7 @@ namespace LittleEngine
 			for (int v = 0; v < 4; ++v)
 			{
 				Vertex vert = m_vertices[i * 4 + v];
-				vert.textureIndex = slot;
+				vert.textureIndex = static_cast<float>(slot);
 				m_verticesBatch.push_back(vert);
 			}
 
@@ -307,6 +330,10 @@ namespace LittleEngine
 		{
 			RenderBatch();
 		}
+
+
+		if (m_renderTarget != nullptr)
+			m_renderTarget->Unbind();
 
 
 	}
@@ -342,29 +369,31 @@ namespace LittleEngine
 
 	}
 
-	float Renderer::AddTextureToBatch(Texture texture)
+	int Renderer::AddTextureToBatch(Texture texture)
 	{
 		// check if texture already bound
-		auto it = m_bindedTextures.find(texture.id);
-
-		// if found do not bind
-		if (it != m_bindedTextures.end())
-			return it->second;
+		GLuint new_id = texture.id;
+		for (int slot = 0; slot < m_bindedTextureCount; slot++)
+		{
+			if (m_texturesBatch[slot].id == new_id)
+				return slot;
+		}
 
 		// if binded texture full, render batch
-		if (m_bindedTextures.size() == LittleEngine::defaults::MAX_TEXTURE_SLOTS)
+		if (m_bindedTextureCount == defaults::MAX_TEXTURE_SLOTS)
 			return -1;
 
-		// else add to binded textures;
-		int slot = m_bindedTextures.size();
-		m_texturesBatch.push_back(texture);
-		m_bindedTextures[texture.id] = slot;
-		texture.Bind(slot);
-		
-		return (float)slot;
-	
+		// bind the texture.
+		m_texturesBatch[m_bindedTextureCount] = texture;
+		texture.Bind(m_bindedTextureCount);
+
+		return m_bindedTextureCount++;
+
 	}
 
+#pragma endregion
+
+#pragma region Clear frame / batch
 
 	void Renderer::ClearDrawQueue()
 	{
@@ -380,9 +409,13 @@ namespace LittleEngine
 	{
 		m_verticesBatch.clear();
 		m_indicesBatch.clear();
-		m_bindedTextures.clear();
-		m_texturesBatch.clear();
+		m_texturesBatch.fill(Texture{});
+		m_bindedTextureCount = 0;
 	}
+
+#pragma endregion
+
+#pragma region Getters
 
 	glm::mat4 Renderer::GetProjectionMatrix()
 	{
@@ -400,9 +433,10 @@ namespace LittleEngine
 
 		}
 		// tODO change this
-		//return glm::ortho(0.f, (float)m_width, 0.f, (float)m_height, -1.f, 1.f);	// (0,0) BL, X+ -> right Y+ -> top
 		return glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight, -1.f, 1.f);
 	}
+
+#pragma endregion
 }
 
 

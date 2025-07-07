@@ -1,7 +1,7 @@
 #include "LittleEngine/Graphics/shader.h"
 
 
-namespace LittleEngine
+namespace LittleEngine::Graphics
 {
 
 #pragma region default shaders
@@ -50,6 +50,8 @@ namespace LittleEngine
 
 #pragma endregion
 
+#pragma region Initialization / lifetime management
+
     Shader::Shader()
     {
         if (s_defaultShader == 0)
@@ -91,6 +93,10 @@ namespace LittleEngine
         s_defaultShader = CreateShaderFromCode(defaultVertexShader, defaultFragmentShader);
 
     }
+
+#pragma endregion
+
+#pragma region Uniform Binding
 
     // activate the shader
     // ------------------------------------------------------------------------
@@ -162,6 +168,10 @@ namespace LittleEngine
         glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
 
+#pragma endregion
+
+#pragma region Helper
+
     // utility function for checking shader compilation/linking errors.
     // ------------------------------------------------------------------------
     void Shader::CheckCompileErrors(GLuint shader, const std::string& type)
@@ -193,6 +203,10 @@ namespace LittleEngine
             }
         }
     }
+
+#pragma endregion
+
+#pragma region Shader Loading / Compiling
 
     GLuint Shader::CreateShaderFromFile(const std::string& vertexPath, const std::string& fragmentPath)
     {
@@ -269,5 +283,7 @@ namespace LittleEngine
 
         return id;
     }
+
+#pragma endregion
 
 }

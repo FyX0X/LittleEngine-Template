@@ -7,7 +7,11 @@ int main()
 
 	game::Game gameInstance;
 
-	LittleEngine::Initialize();	
+
+	LittleEngine::EngineConfig config;
+	config.title = "Template Test Game";
+
+	LittleEngine::Initialize(config);	
 	LittleEngine::SetWindowResizeCallback([&](int w, int h) {gameInstance.OnWindowSizeChange(w, h);});
 
 	gameInstance.Initialize();

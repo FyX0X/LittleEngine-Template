@@ -40,39 +40,55 @@
  *
  * GRAPHICS:
  * 
- * add render target and fbo.
+ * add render target and fbo. ok but not good yet...
+ * maybe still improve. => current projection maybe strange ... because not "pixel unit".
  * draw line
  * draw circle ?
  * draw particle ?
- * optimise renderer flush and batching.
+ * optimise renderer flush and batching.	YES -> currently pushing all vertices and indices to flush then tp batch, doing two times the work
+ * Optimisation needed.
+ * also flush when max quad size is attained.
  * better text rendering. (shadow, higlight)
  * Instancing ? with instanced array ?
+ * Padding for texture Atlas ?
+ * Add rotated rects ?
+ * Depth/stencil Buffer
+ * 
+ * renderer: Flush vs endframe not clear;
+ * 
+ * write FBO / screen to png ? maybe not needed
+ * to take screenshot ?
+ * 
+ * Querry FPS
  *	
  * INPUT:
  * 
  * stored keys ok
- * action ok
+ * action removed
+ * Commands ok
  * callbacks ok
  * InputAxis ok
  * 
- * getActionStatus ?
+ * reset input on window focus/unfocus ok
  * 
- * bind same key to multiple action
+ * bind same key to multiple action ok
  * 
  * scroll
  * mouse get pos 
+ * picking ??
  * 
  * 
  * AUDIO:
  * 
  * basic sound ok
- * background music
+ * background music ?
  * load ogg/mp3/...
  * play same sound multiple time 
- * positionnal audio
+ * positionnal audio ok
  * 
  * 
  */
+
 
 
 namespace LittleEngine
@@ -90,11 +106,12 @@ namespace LittleEngine
 	//Initializes the library. Call once before you use the library.
 	int Initialize(const EngineConfig& config = {});
 	
+	//Deinitializes the library.
+	void Shutdown();
+
 	// Calls the main loop function from the game
 	void Run(const std::function<void(float)>& update, const std::function<void()>& render);
 
-	//Deinitializes the library.
-	void Shutdown();
 
 	// Gets the viewport size.
 	glm::ivec2 GetWindowSize();
@@ -109,7 +126,6 @@ namespace LittleEngine
 
 
 
-#pragma endregion
 
 
 
