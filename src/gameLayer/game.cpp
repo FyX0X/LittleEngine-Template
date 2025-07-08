@@ -3,7 +3,11 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
+
+#if ENABLE_IMGUI == 1
 #include "imgui.h"
+#endif
+
 #include <iostream>
 #include <sstream>
 
@@ -303,6 +307,7 @@ namespace game
 
 
 #pragma region ImGui Render
+#if ENABLE_IMGUI == 1
  		float fps = 1.f / delta;
 		// Your ImGui widgets here
 		ImGui::Begin("Debug");
@@ -409,7 +414,7 @@ namespace game
 
 		ImGui::End();
 
-
+#endif
 #pragma endregion
 
 
