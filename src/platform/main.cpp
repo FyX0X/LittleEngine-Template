@@ -10,6 +10,7 @@ int main()
 
 	LittleEngine::EngineConfig config;
 	config.title = "Template Test Game";
+	config.iconPath = RESOURCES_PATH "awesomeface.png"; // Set the path to your icon if you have one
 
 	LittleEngine::Initialize(config);	
 	LittleEngine::SetWindowResizeCallback([&](int w, int h) {gameInstance.OnWindowSizeChange(w, h);});

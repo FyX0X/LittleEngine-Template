@@ -100,6 +100,7 @@ namespace LittleEngine
 		int windowWidth = 800;
 		int windowHeight = 600;
 		bool vsync = true;
+		std::string iconPath = ""; // path to the application icon, can be empty
 	};
 
 
@@ -124,6 +125,7 @@ namespace LittleEngine
 	void SetVsync(bool b);
 	void SetWireframe(bool b);
 
+	void SetApplicationIcon(const std::string& path);
 
 
 

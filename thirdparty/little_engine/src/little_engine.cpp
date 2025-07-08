@@ -185,6 +185,11 @@ namespace LittleEngine
 		// default vsync:
 		SetVsync(config.vsync);
 
+		// load icon
+		if (!config.iconPath.empty())
+		{
+			SetApplicationIcon(config.iconPath);
+		}
 
 		// create default shader
 		Graphics::Shader::Initialize();
@@ -347,6 +352,27 @@ namespace LittleEngine
 		else
 		{
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+	}
+
+	void SetApplicationIcon(const std::string& path)
+	{
+		int width, height, nrChannels;
+		unsigned char* pixels = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+
+		if (pixels)
+		{
+			GLFWimage images[1];
+			images[0].width = width;
+			images[0].height = height;
+			images[0].pixels = pixels;
+
+			glfwSetWindowIcon(s_window, 1, images);
+			stbi_image_free(pixels);
+		}
+		else
+		{
+			LogError("SetApplicationIcon: failed to load icon: " + path);
 		}
 	}
 
