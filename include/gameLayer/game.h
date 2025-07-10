@@ -48,6 +48,7 @@ namespace game
 		float rolloff = 1.f;
 
 		LittleEngine::Graphics::Texture texture1, texture2;
+		LittleEngine::Graphics::Texture torch;
 		LittleEngine::Graphics::Texture minecraft_blocks;
 		LittleEngine::Graphics::TextureAtlas minecraft_atlas;
 		std::vector<LittleEngine::Graphics::Texture> textures;

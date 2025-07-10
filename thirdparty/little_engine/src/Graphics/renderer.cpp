@@ -1,12 +1,18 @@
 #include "LittleEngine/Graphics/renderer.h"
+#include "LittleEngine/Graphics/bitmap_helper.h"
 
 #include "LittleEngine/error_logger.h"
 #include "LittleEngine/internal.h"
+#include "LittleEngine/Storage/storage_helper.h"
+
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <stb_image/stb_image_write.h>
+
 
 #include <sstream>
+#include <filesystem>
 
 
 namespace LittleEngine::Graphics
@@ -239,6 +245,47 @@ namespace LittleEngine::Graphics
 	void Renderer::EndFrame()
 	{
 		Flush(); // render everything queued
+	}
+
+
+	void Renderer::SaveScreenshot(RenderTarget* target)
+	{
+		int width, height;
+		int imageTarget;
+
+		if (target == nullptr)	// window
+		{
+			width = m_width;
+			height = m_height;
+			glReadBuffer(GL_BACK);
+		}
+		else 
+		{
+			width = target->GetSize().x;
+			height = target->GetSize().y;
+			target->Bind();
+			glReadBuffer(GL_COLOR_ATTACHMENT0);
+		}
+
+		std::vector<unsigned char> pixels(width * height * 4);
+
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+		if (target != nullptr)
+			target->Unbind();
+
+		// swap pixels because opengl has bottom left as origin, instead of top left.
+		FlipBitmapVertically(pixels.data(), width, height, 4);
+
+		Storage::EnsureDirectoryExists("screenshots");
+
+		std::string path = Storage::GetNextFreeFilepath("screenshots", "screenshot", ".png");
+
+
+		stbi_write_png(path.c_str(), width, height, 4, pixels.data(), width * 4);
+
+
+		
 	}
 	
 	void Renderer::Flush()

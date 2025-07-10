@@ -54,6 +54,9 @@ namespace LittleEngine::Graphics
 		void BeginFrame();
 		void EndFrame();
 
+
+		void SaveScreenshot(RenderTarget* target = nullptr);
+
 #pragma region DRAW RECT
 
 		// Render functions

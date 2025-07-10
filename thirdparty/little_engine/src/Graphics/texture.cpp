@@ -1,6 +1,7 @@
 #include "LittleEngine/Graphics/texture.h"
 
 #include "LittleEngine/error_logger.h"
+#include "LittleEngine/Graphics/bitmap_helper.h"
 #include <stb_image/stb_image.h>
 #include <vector>
 
@@ -79,6 +80,9 @@ namespace LittleEngine::Graphics
 
     void Texture::LoadFromData(const unsigned char* data, int width, int height, int channelCount, bool pixelated, bool mipmaps, bool verticalFlip)
     {
+        this->width = width;
+        this->height = height;
+
         if (id != 0)
             glDeleteTextures(1, &id);
         glGenTextures(1, &id);
@@ -192,11 +196,6 @@ namespace LittleEngine::Graphics
 
 #pragma region Getters
 
-    glm::vec4 TextureAtlas::GetUV(int x, int y)
-    {
-        return glm::vec4(x * xCountInv, y * yCountInv, (x + 1) * xCountInv, (y + 1) * yCountInv);
-    }
-
     Texture Texture::GetDefaultTexture()
     {
         if (s_defaultTexId == 0)
@@ -204,29 +203,16 @@ namespace LittleEngine::Graphics
 
         Texture def;
         def.id = s_defaultTexId;
+        def.width = 1;
+        def.height = 1;
         return def;
     }
+
 
 #pragma endregion
 
 #pragma region Helper
 
-    void Texture::FlipBitmapVertically(unsigned char* bitmap, int width, int height, int pixelSize)
-    {
-        int stride = width * pixelSize; // 1 byte per pixel (GL_RED or GL_RGBA...)
-        std::vector<unsigned char> tempRow(stride);
-
-        for (int y = 0; y < height / 2; ++y)
-        {
-            unsigned char* rowTop = bitmap + y * stride;
-            unsigned char* rowBottom = bitmap + (height - 1 - y) * stride;
-
-            // swap rows
-            memcpy(tempRow.data(), rowTop, stride);
-            memcpy(rowTop, rowBottom, stride);
-            memcpy(rowBottom, tempRow.data(), stride);
-        }
-    }
 
     void Texture::CreateDefaultTexture()
     {
@@ -253,9 +239,40 @@ namespace LittleEngine::Graphics
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data);
 
         glBindTexture(GL_TEXTURE_2D, 0);
+
     }
 
 #pragma endregion
 
+#pragma region TextureAtlas
+
+    TextureAtlas::TextureAtlas(Texture texture, int cellWidth, int cellHeight)
+    {
+        if ((texture.width % cellWidth != 0) || texture.height % cellHeight != 0)
+        {
+            ThrowError("TextureAtlas constructor: texture width / height is not multiple of cell width / height.");
+        }
+
+        this->textureWidth = texture.width;
+        this->textureHeight = texture.height;
+        this->cellWidth = cellWidth;
+        this->cellHeight = cellHeight;
+
+    }
+
+    glm::vec4 TextureAtlas::GetUV(int x, int y)
+    {
+        return glm::vec4(
+            (x * cellWidth) / static_cast<float>(textureWidth),
+            (y * cellHeight) / static_cast<float>(textureHeight),
+            ((x + 1) * cellWidth) / static_cast<float>(textureWidth),
+            ((y + 1) * cellHeight) / static_cast<float>(textureHeight)
+        );
+        //return glm::vec4((x * cellWidth + 0.5f) / textureWidth, (y * cellHeight + 0.5f) / textureHeight,
+        //    ((x + 1) * cellWidth - 0.5f) / textureWidth, ((y + 1) * cellHeight - 0.5f) / textureHeight);
+    }
+
+
+#pragma endregion
 
 }

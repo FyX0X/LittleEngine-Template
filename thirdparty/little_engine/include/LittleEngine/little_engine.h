@@ -51,8 +51,10 @@
  * better text rendering. (shadow, higlight)
  * Instancing ? with instanced array ?
  * Padding for texture Atlas ?
+ * texture atlas reworked ok (no padding still)
  * Add rotated rects ?
  * Depth/stencil Buffer
+ * bloom
  * 
  * renderer: Flush vs endframe not clear;
  * 

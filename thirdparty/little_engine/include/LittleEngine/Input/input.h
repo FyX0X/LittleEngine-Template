@@ -16,9 +16,9 @@ namespace LittleEngine::Input
 	class Command abstract {
 	public:
 		virtual std::string GetName() const = 0;
-		virtual void OnPress() = 0;
-		virtual void OnRelease() = 0;
-		virtual void OnHold() = 0;
+		virtual void OnPress() {};
+		virtual void OnRelease() {};
+		virtual void OnHold() {};
 		virtual ~Command() = default;
 	};
 

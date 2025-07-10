@@ -12,6 +12,8 @@ namespace LittleEngine::Graphics
 	{
 	public:
 		GLuint id = 0;
+		int width = -1;
+		int height = -1;
 
 		void CreateEmptyTexture(int width, int height, int channelCount);
 		void LoadFromFile(const std::string& path, bool pixelated = defaults::pixelated, bool mipmaps = defaults::mipmaps, bool verticalFlip = false);
@@ -27,7 +29,6 @@ namespace LittleEngine::Graphics
 		static Texture GetDefaultTexture();
 	private:
 		static void CreateDefaultTexture();
-		static void FlipBitmapVertically(unsigned char* bitmap, int width, int height, int pixelSize);
 		static GLuint s_defaultTexId;
 	};
 #pragma endregion
@@ -44,10 +45,12 @@ namespace LittleEngine::Graphics
 	struct TextureAtlas
 	{
 		TextureAtlas() {};
-		TextureAtlas(int xCount, int yCount) :xCountInv(1.f/xCount), yCountInv(1.f/yCount) {};
+		TextureAtlas(Texture texture, int cellWidth, int cellHeight);
 
-		float xCountInv = 0;
-		float yCountInv = 0;
+		int textureWidth = 0;
+		int textureHeight = 0;
+		int cellWidth = 0;
+		int cellHeight = 0;
 
 		// Returns UV coords of block in (u0, v0, u1, v1) format.
 		glm::vec4 GetUV(AtlasCoord coord)

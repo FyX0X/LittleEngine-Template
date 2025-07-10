@@ -46,8 +46,13 @@ namespace game
 		m_audioSystem->LoadSound(RESOURCES_PATH "test.wav", sound);
 		texture1.LoadFromFile(RESOURCES_PATH "test.jpg");
 		texture2.LoadFromFile(RESOURCES_PATH "awesomeface.png", true, false, true);
+		torch.LoadFromFile(RESOURCES_PATH "torch.png");
 		minecraft_blocks.LoadFromFile(RESOURCES_PATH "minecraft_atlas.png");
-		minecraft_atlas = LittleEngine::Graphics::TextureAtlas(16, 16);
+		minecraft_atlas = LittleEngine::Graphics::TextureAtlas(minecraft_blocks, 16, 16);
+
+		glm::vec4 r = minecraft_atlas.GetUV(0, 0);
+		std::cout << r.x << " " << r.y << " " << r.z << " " << r.w << "\n";
+		std::cout << minecraft_atlas.textureWidth << " " << minecraft_atlas.textureHeight << " " << minecraft_atlas.cellWidth << " " << minecraft_atlas.cellHeight << "\n";
 
 		font.LoadFromTTF(RESOURCES_PATH "arial.ttf", 64.f);
 
@@ -151,6 +156,31 @@ namespace game
 			void OnHold() override {}
 		};
 
+		class ScreenshotCommand : public LittleEngine::Input::Command {
+			LittleEngine::Graphics::Renderer* renderer;
+		public:
+			ScreenshotCommand(LittleEngine::Graphics::Renderer* r) : renderer(r) {}
+			std::string GetName() const override { return "Screenshot"; }
+
+			void OnPress() override { renderer->SaveScreenshot(); }
+		};
+
+		class SaveRenderTargetCommand : public LittleEngine::Input::Command {
+			LittleEngine::Graphics::Renderer* renderer;
+			LittleEngine::Graphics::RenderTarget& target;
+		public:
+			SaveRenderTargetCommand(LittleEngine::Graphics::Renderer* r,
+				LittleEngine::Graphics::RenderTarget& t) : renderer(r), target(t) {}
+			
+			std::string GetName() const override { return "SaveRenderTarget"; }
+
+			void OnPress() override { 
+				std::cout << "hello before: ";
+				renderer->SaveScreenshot(&target);
+				std::cout << "hello after\n ";
+			}
+		};
+
 
 		class ColorCommand : public LittleEngine::Input::Command {
 			LittleEngine::Graphics::Color& color;
@@ -190,6 +220,8 @@ namespace game
 		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<SoundCommand>(sound));
 		LittleEngine::Input::BindMouseButtonToCommand(GLFW_MOUSE_BUTTON_LEFT, std::make_unique<ColorCommand>(m_data.color));
 		LittleEngine::Input::BindMouseButtonToCommand(GLFW_MOUSE_BUTTON_RIGHT, std::make_unique<ZoomCommand>(m_data.zoom));
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_F11, std::make_unique<ScreenshotCommand>(m_renderer.get()));
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_F10, std::make_unique<SaveRenderTargetCommand>(m_renderer.get(), target));
 
 
 
