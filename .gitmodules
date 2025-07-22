@@ -1,0 +1,3 @@
+[submodule "thirdparty/LittleEngine"]
+	path = thirdparty/LittleEngine
+	url = https://github.com/FyX0X/LittleEngine.git
