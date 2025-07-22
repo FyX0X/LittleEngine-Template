@@ -41,16 +41,8 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 
-add_subdirectory(thirdparty/glfw-3.3.2)			#window oppener
-add_subdirectory(thirdparty/glad)				#opengl loader
-add_subdirectory(thirdparty/stb_image)			#loading immaged
-add_subdirectory(thirdparty/freetype-2.13.3)	#loading ttf files
-#add_subdirectory(thirdparty/enet-1.3.17)		#networking
-add_subdirectory(thirdparty/miniaudio)			#audio
-add_subdirectory(thirdparty/glm)				#math
-add_subdirectory(thirdparty/imgui)				#ui
-#-----------------------------------------------
-add_subdirectory(thirdparty/little_engine)
+
+add_subdirectory(thirdparty/LittleEngine)
 
 
 # MY_SOURCES is defined to be a list of all the source files for my game 
@@ -127,5 +119,7 @@ target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURC
 #	glad stb_image miniaudio imgui enet LittleEngine freetype)
 
 
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE glm glfw 
-	glad stb_image miniaudio imgui LittleEngine freetype)
+#target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE glm glfw 
+#	glad stb_image miniaudio imgui LittleEngine freetype)
+
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE LittleEngine)
