@@ -54,12 +54,12 @@
  * texture atlas reworked ok (no padding still)
  * Add rotated rects ?
  * Depth/stencil Buffer
- * bloom
+ * bloom and light source.
  * 
  * renderer: Flush vs endframe not clear;
  * 
- * write FBO / screen to png ? maybe not needed
- * to take screenshot ?
+ * write FBO / screen to png ok
+ * to take screenshot ok
  * 
  * Querry FPS
  *	
