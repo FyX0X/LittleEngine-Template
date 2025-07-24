@@ -74,6 +74,9 @@ namespace game
 		tilemap.SetMap(world, 10, 10, { 0, 0 });
 
 
+		// initialize the render targets
+		sceneFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y);
+		lightFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y);
 		// create custom texture with render target
 
 		target.Create(100, 100);
@@ -298,6 +301,10 @@ namespace game
 
 
 
+		// render scene to fbo
+		m_renderer->SetRenderTarget(&sceneFBO);
+
+#pragma region Scene Render
 		m_renderer->BeginFrame();
 
 		// green block from (-10, -10) to (0 0)
@@ -331,6 +338,16 @@ namespace game
 
 
 		m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
+
+#pragma endregion
+
+
+#pragma region Light Render
+
+		m_renderer->SetRenderTarget(&lightFBO);
+
+
+#pragma endregion
 
 
 		m_renderer->EndFrame();
@@ -461,8 +478,20 @@ namespace game
 	void Game::OnWindowSizeChange(int w, int h)
 	{
 		m_renderer->UpdateWindowSize(w, h);
+		ResiveFBOs();
 	}
 
 #pragma endregion
+
+	void Game::ResiveFBOs()
+	{
+		// resize the render targets
+		sceneFBO.Cleanup();
+		lightFBO.Cleanup();
+
+		sceneFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y);
+		lightFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y);
+
+	}
 }
 

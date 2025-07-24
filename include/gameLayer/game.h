@@ -31,6 +31,9 @@ namespace game
 
 
 	private:
+
+
+		void ResiveFBOs();
 		
 		GameData m_data;
 		std::unique_ptr<LittleEngine::Graphics::Renderer> m_renderer;
@@ -82,6 +85,8 @@ namespace game
 
 
 		LittleEngine::Graphics::RenderTarget target = {};
+		LittleEngine::Graphics::RenderTarget sceneFBO = {};
+		LittleEngine::Graphics::RenderTarget lightFBO = {};
 	};
 
 
