@@ -34,7 +34,7 @@ namespace game
 	bool Game::Initialize()
 	{
 		m_renderer = std::make_unique<LittleEngine::Graphics::Renderer>();
-		m_renderer->Initialize(LittleEngine::GetWindowSize());
+		m_renderer->Initialize(sceneCamera, LittleEngine::GetWindowSize());
 
 		m_audioSystem = std::make_unique<LittleEngine::Audio::AudioSystem>();
 		m_audioSystem->Initialize();
@@ -74,19 +74,27 @@ namespace game
 		tilemap.SetMap(world, 10, 10, { 0, 0 });
 
 
+		// initialize the blur shader
+
+		blurShader.Create(RESOURCES_PATH "fullscreen_quad.vert", RESOURCES_PATH "blur.frag", true);
+		lightSceneMergingShader.Create(RESOURCES_PATH "fullscreen_quad.vert", RESOURCES_PATH "merge_light_scene.frag", true);
+
+
 		// initialize the render targets
-		sceneFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y);
-		lightFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y);
+		ResizeFBOs();
+		
 		// create custom texture with render target
 
 		target.Create(100, 100);
 		m_renderer->SetRenderTarget(&target);
+		m_renderer->SetCamera(UICamera);
 
-		m_renderer->DrawRect({ 0, 0, 10, 10 }, texture2);
-		m_renderer->DrawString("target", { -12, 5 }, LittleEngine::Graphics::Colors::White, 6);
+		m_renderer->DrawRect({ 0, 0, 1000, 1000 }, texture2);
+		m_renderer->DrawString("target", { 10, 100 }, LittleEngine::Graphics::Colors::White, 60);
 
 		m_renderer->Flush();
 		m_renderer->SetRenderTarget();
+		m_renderer->SetCamera(sceneCamera);
 		
 
 
@@ -252,6 +260,7 @@ namespace game
 		// platform::writeEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData));
 	}
 
+
 #pragma endregion
 
 #pragma region Mainloop
@@ -286,8 +295,8 @@ namespace game
 
 
 		//m_renderer->camera.Follow(m_data.rectPos, dt, cameraFollowSpeed, maxDist, minDist);
-		m_renderer->camera.FollowSpring(m_data.rectPos, dt, maxDist, cameraFollowSpeed);
-		m_renderer->camera.zoom = m_data.zoom;
+		sceneCamera.FollowSpring(m_data.rectPos, dt, maxDist, cameraFollowSpeed);
+		sceneCamera.zoom = m_data.zoom;
 
 		m_audioSystem->SetListenerPosition(m_data.rectPos.x, m_data.rectPos.y);
 
@@ -303,6 +312,7 @@ namespace game
 
 		// render scene to fbo
 		m_renderer->SetRenderTarget(&sceneFBO);
+		sceneFBO.Clear();
 
 #pragma region Scene Render
 		m_renderer->BeginFrame();
@@ -339,18 +349,56 @@ namespace game
 
 		m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
 
+		m_renderer->Flush();
+
 #pragma endregion
 
 
 #pragma region Light Render
 
 		m_renderer->SetRenderTarget(&lightFBO);
+		m_renderer->BeginFrame();
+		lightFBO.Clear({0.1,0.1,0.2,1});
+
+		// use awesomeface.png as light texture
+		m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
+
+		m_renderer->DrawRect(glm::vec4(1.f, 1.f, 1.f, 1.f), LittleEngine::Graphics::Colors::Red * lightIntensity);
+
+		//glEnable(GL_BLEND);
+		//glBlendFunc(GL_ONE, GL_ONE); // Additive
+
+		//m_renderer->SaveScreenshot(&lightFBO, "before");
+		m_renderer->Flush();
+		//m_renderer->SaveScreenshot(&lightFBO, "flush");
+
+		BlurLightTexture(lightFBO, blurPasses, blurShader);
+		//m_renderer->SaveScreenshot(&lightFBO, "blur");
+
+
+
 
 
 #pragma endregion
 
+		m_renderer->SetRenderTarget();
 
-		m_renderer->EndFrame();
+		lightSceneMergingShader.Use();
+
+		lightSceneMergingShader.SetInt("sceneTexture", 0);
+		lightSceneMergingShader.SetInt("lightTexture", 1);
+
+		sceneFBO.GetTexture().Bind(0);
+		lightFBO.GetTexture().Bind(1);
+
+		m_renderer->FlushFullscreenQuad();
+
+
+		m_renderer->shader.Use();
+
+
+
+
 #pragma endregion
 
 
@@ -363,7 +411,14 @@ namespace game
 		ImGui::Text("FPS: %.2f", fps);
 		ImGui::Text("QuadCount: %d", m_renderer->GetQuadCount());
 		ImGui::Text("DATA: %.1f, %.1f", m_data.rectPos.x, m_data.rectPos.y);
-		ImGui::SliderFloat("Camera Zoom", &m_data.zoom, 0.1f, 10.f);
+		ImGui::SliderFloat("Camera Zoom", &m_data.zoom, 0.1f, 100.f);
+		ImGui::SliderFloat("light intensity", &lightIntensity, 0.1f, 100.f);
+		ImGui::SliderInt("Blur passes", &blurPasses, 1, 20);
+		if (ImGui::SliderInt("Downscale Factor", &downscaleFactor, 1, 20))
+		{
+			// resize the render targets
+			ResizeFBOs();
+		}
 		//ImGui::SliderFloat("Camera x", &m_data.rectPos.x, -50.f, 50.f);
 		//ImGui::SliderFloat("Camera y", &m_data.rectPos.y, -50.f, 50.f);
 		//ImGui::SliderFloat("Red", &color.x, 0.f, 1.f);
@@ -445,7 +500,7 @@ namespace game
 		{
 			distHistory.erase(distHistory.begin());
 		}
-		distHistory.push_back(m_renderer->camera.position.x - m_data.rectPos.x);
+		distHistory.push_back(sceneCamera.position.x - m_data.rectPos.x);
 
 		float maxx = 0;
 		for (float f : distHistory)
@@ -478,20 +533,74 @@ namespace game
 	void Game::OnWindowSizeChange(int w, int h)
 	{
 		m_renderer->UpdateWindowSize(w, h);
-		ResiveFBOs();
+		ResizeFBOs();
 	}
 
 #pragma endregion
 
-	void Game::ResiveFBOs()
+	void Game::ResizeFBOs()
 	{
 		// resize the render targets
 		sceneFBO.Cleanup();
 		lightFBO.Cleanup();
 
-		sceneFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y);
-		lightFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y);
+		sceneFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y, GL_RGB);
+		lightFBO.Create(LittleEngine::GetWindowSize().x / downscaleFactor, LittleEngine::GetWindowSize().y / downscaleFactor, GL_RGB16F);
 
 	}
+	void Game::BlurLightTexture(LittleEngine::Graphics::RenderTarget& lightFBO, int passes, LittleEngine::Graphics::Shader& shader)
+	{
+		bool horizontal = true;
+		bool firstIteration = true;
+
+		// 1. Create two ping-pong FBOs
+		LittleEngine::Graphics::RenderTarget pingpongFBO[2];
+		glm::ivec2 size = lightFBO.GetSize();
+
+		for (int i = 0; i < 2; ++i)
+			pingpongFBO[i].Create(size.x, size.y); // should use RGB16F if possible
+
+		// 2. Blur Passes
+		shader.Use();
+
+		shader.SetInt("image", 0);
+
+		for (int i = 0; i < passes * 2; ++i) {
+			pingpongFBO[horizontal].Bind();
+			shader.SetBool("horizontal", horizontal);
+			shader.SetFloat("texelSize", horizontal ? (1.f / size.x) : (1.f / size.y));
+
+			if (firstIteration)
+				lightFBO.GetTexture().Bind(0);
+			else
+				pingpongFBO[!horizontal].GetTexture().Bind(0);
+
+
+			m_renderer->FlushFullscreenQuad();
+
+			horizontal = !horizontal;
+			if (firstIteration)
+				firstIteration = false;
+		}
+
+		// 3. Final pass: write blurred result back into lightFBO
+		lightFBO.Bind();  // bind original light FBO as target
+		shader.SetBool("horizontal", false); // doesn't matter, we just draw the final result
+		shader.SetFloat("texelSize", 1.f/ size.y); // doesn't matter, we just draw the final result
+		pingpongFBO[!horizontal].GetTexture().Bind(0); // final blurred texture
+
+		shader.SetInt("image", 0);
+
+		m_renderer->FlushFullscreenQuad();
+
+		// 4. Cleanup temporary FBOs
+		for (int i = 0; i < 2; ++i)
+			pingpongFBO[i].Cleanup();
+
+		lightFBO.Unbind(); // unbind the light FBO to restore default framebuffer
+
+		m_renderer->shader.Use(); // restore default shader
+	}
+
 }
 

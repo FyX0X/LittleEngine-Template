@@ -33,7 +33,9 @@ namespace game
 	private:
 
 
-		void ResiveFBOs();
+		void ResizeFBOs();
+
+		void BlurLightTexture(LittleEngine::Graphics::RenderTarget& lightFBO, int passes, LittleEngine::Graphics::Shader& shader);
 		
 		GameData m_data;
 		std::unique_ptr<LittleEngine::Graphics::Renderer> m_renderer;
@@ -66,6 +68,11 @@ namespace game
 
 		float speed = 10.f;
 
+
+		int blurPasses = 5;
+		int downscaleFactor = 2;
+		float lightIntensity = 1.f;
+
 		float cameraFollowSpeed = 30.f;
 		float maxDist = 5.f;
 		float minDist = 0.f;
@@ -87,6 +94,14 @@ namespace game
 		LittleEngine::Graphics::RenderTarget target = {};
 		LittleEngine::Graphics::RenderTarget sceneFBO = {};
 		LittleEngine::Graphics::RenderTarget lightFBO = {};
+
+		LittleEngine::Graphics::Camera sceneCamera = {};
+		LittleEngine::Graphics::Camera UICamera = {};
+
+
+		LittleEngine::Graphics::Shader blurShader = {};
+		LittleEngine::Graphics::Shader lightSceneMergingShader = {};
+
 	};
 
 
