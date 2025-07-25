@@ -11,13 +11,13 @@ void main()
     vec3 lightColor = texture(lightTexture, TexCoords).rgb;
 
     // Additive blending of light on scene
-    vec3 finalColor = sceneColor * lightColor;
+    vec3 finalColor = sceneColor + lightColor;
 
     // Optional: tone mapping or clamp
-    finalColor = finalColor / (finalColor + vec3(1.0));
-    finalColor = pow(finalColor, vec3(1.0 / 2.2)); // gamma correction
+    //finalColor = finalColor / (finalColor + vec3(1.0));
+    //finalColor = pow(finalColor, vec3(1.0 / 2.2)); // gamma correction
 
-    //finalColor = clamp(finalColor, 0.0, 1.0);
+    finalColor = clamp(finalColor, 0.0, 1.0);
 
     FragColor = vec4(finalColor, 1.0);
 }

@@ -37,6 +37,31 @@ namespace game
 
 		void BlurLightTexture(LittleEngine::Graphics::RenderTarget& lightFBO, int passes, LittleEngine::Graphics::Shader& shader);
 		
+		struct LightSource
+		{
+			glm::vec2 position;
+			glm::vec3 color = { 1.f, 1.f, 1.f };
+			float intensity = 1.f;
+			float radius = 1.f;
+		};
+
+		struct edge
+		{
+			glm::vec2 p1;
+			glm::vec2 p2;
+			float length() const { return glm::length(p2 - p1); }
+			glm::vec2 direction() const { return glm::normalize(p2 - p1); }
+		};
+
+		LightSource light = { { 3.f, 2.f }, { 1.f, 1.f, 1.f }, 1.f, 1.f };
+		std::vector<edge> edges = {
+			{{-1.f, -1.f}, {1.f, -1.f}},
+			{{1.f, -1.f}, {1.f, 1.f}},
+			{{1.f, 1.f}, {-1.f, 1.f}},
+			{{-1.f, 1.f}, {-1.f, -1.f}}
+		};
+
+
 		GameData m_data;
 		std::unique_ptr<LittleEngine::Graphics::Renderer> m_renderer;
 		std::unique_ptr<LittleEngine::Audio::AudioSystem> m_audioSystem;

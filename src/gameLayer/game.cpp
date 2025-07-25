@@ -85,15 +85,23 @@ namespace game
 		
 		// create custom texture with render target
 
+		sceneCamera.centered = true;	// center camera on screen
+		sceneCamera.viewportSize = LittleEngine::GetWindowSize();
+		UICamera.viewportSize = LittleEngine::GetWindowSize();
+
 		target.Create(100, 100);
 		m_renderer->SetRenderTarget(&target);
-		m_renderer->SetCamera(UICamera);
 
-		m_renderer->DrawRect({ 0, 0, 1000, 1000 }, texture2);
-		m_renderer->DrawString("target", { 10, 100 }, LittleEngine::Graphics::Colors::White, 60);
+		LittleEngine::Graphics::Camera tempCamera = UICamera;
+		tempCamera.viewportSize = (glm::vec2)target.GetSize();
+		m_renderer->SetCamera(tempCamera);
+
+		m_renderer->DrawRect({ 0, 0, 100, 100 }, texture2);
+		m_renderer->DrawString("target", { 10, 100 }, LittleEngine::Graphics::Colors::White, 10);
 
 		m_renderer->Flush();
 		m_renderer->SetRenderTarget();
+
 		m_renderer->SetCamera(sceneCamera);
 		
 
@@ -236,13 +244,6 @@ namespace game
 
 
 
-
-
-
-
-
-
-
 		//loading the saved data. Loading an entire structure like this makes savind game data very easy.
 		//platform::readEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData));
 
@@ -358,23 +359,28 @@ namespace game
 
 		m_renderer->SetRenderTarget(&lightFBO);
 		m_renderer->BeginFrame();
-		lightFBO.Clear({0.1,0.1,0.2,1});
+		//lightFBO.Clear({0.1,0.1,0.2,1});
+		lightFBO.Clear(LittleEngine::Graphics::Colors::Black);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE); // Additive
 
 		// use awesomeface.png as light texture
 		m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
 
 		m_renderer->DrawRect(glm::vec4(1.f, 1.f, 1.f, 1.f), LittleEngine::Graphics::Colors::Red * lightIntensity);
 
-		//glEnable(GL_BLEND);
-		//glBlendFunc(GL_ONE, GL_ONE); // Additive
 
 		//m_renderer->SaveScreenshot(&lightFBO, "before");
 		m_renderer->Flush();
 		//m_renderer->SaveScreenshot(&lightFBO, "flush");
 
+		// restore default blending
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
 		BlurLightTexture(lightFBO, blurPasses, blurShader);
 		//m_renderer->SaveScreenshot(&lightFBO, "blur");
-
 
 
 
@@ -533,6 +539,11 @@ namespace game
 	void Game::OnWindowSizeChange(int w, int h)
 	{
 		m_renderer->UpdateWindowSize(w, h);
+
+		// update the camera
+		sceneCamera.viewportSize = glm::vec2(w, h);
+		UICamera.viewportSize = glm::vec2(w, h);
+
 		ResizeFBOs();
 	}
 
