@@ -73,11 +73,39 @@ namespace game
 		tilemap.SetTileSetAtlasKey(tileIDs);
 		tilemap.SetMap(world, 10, 10, { 0, 0 });
 
-
+		InitializeShadowBuffers();
 		// initialize the blur shader
 
 		blurShader.Create(RESOURCES_PATH "fullscreen_quad.vert", RESOURCES_PATH "blur.frag", true);
 		lightSceneMergingShader.Create(RESOURCES_PATH "fullscreen_quad.vert", RESOURCES_PATH "merge_light_scene.frag", true);
+		lightShader.Create(RESOURCES_PATH "light.vert", RESOURCES_PATH "light.frag", true);
+		shadowShader.Create(RESOURCES_PATH "shadow.vert", RESOURCES_PATH "shadow.frag", true);
+
+		fullscreenShader.Create(RESOURCES_PATH "fullscreen.vert", RESOURCES_PATH "test.frag", true);
+
+		// generate obstacles
+		Polygon poly = {};
+		poly.vertices = {
+			{ -1.f, -1.f },
+			{ 1.f, -1.f },
+			{ 1.f, 1.f },
+			{ -1.f, 1.f }
+		};
+		poly.BuildEdges();
+
+		obstacles.push_back(poly);
+
+		poly.vertices = {
+
+			{ -3.f, -3.f },
+			{ -2.f, -3.f },
+			{ 3.f, -2.f }
+		};
+
+		poly.BuildEdges();
+		obstacles.push_back(poly);
+
+
 
 
 		// initialize the render targets
@@ -145,6 +173,13 @@ namespace game
 
 		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_UP, GLFW_KEY_DOWN, "vertical_alt");
 		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_RIGHT, GLFW_KEY_LEFT, "horizontal_alt");
+
+		// Duplicate (third) keys for each axis
+		LittleEngine::Input::RegisterAxis("vertical3");
+		LittleEngine::Input::RegisterAxis("horizontal3");
+
+		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_I, GLFW_KEY_K, "vertical3");
+		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_L, GLFW_KEY_J, "horizontal3");
 
 
 #pragma region Command definitions
@@ -293,6 +328,16 @@ namespace game
 
 		m_data.pos2 += move * 10.f * dt;
 
+		vert = LittleEngine::Input::GetAxis("vertical3");
+		hori = LittleEngine::Input::GetAxis("horizontal3");
+
+		move = { hori, vert };
+		length = glm::length(move);
+		if (length > 1)
+			move /= length;
+
+		sources[2].position += move * 10.f * dt;
+
 
 
 		//m_renderer->camera.Follow(m_data.rectPos, dt, cameraFollowSpeed, maxDist, minDist);
@@ -311,12 +356,14 @@ namespace game
 
 
 
+
+#pragma region Scene Render
 		// render scene to fbo
+		//m_renderer->BeginFrame();
+
 		m_renderer->SetRenderTarget(&sceneFBO);
 		sceneFBO.Clear();
 
-#pragma region Scene Render
-		m_renderer->BeginFrame();
 
 		// green block from (-10, -10) to (0 0)
 		m_renderer->DrawRect({ -10, -10, 10 , 10 }, m_data.color);
@@ -350,7 +397,10 @@ namespace game
 
 		m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
 
+
+
 		m_renderer->Flush();
+
 
 #pragma endregion
 
@@ -358,28 +408,82 @@ namespace game
 #pragma region Light Render
 
 		m_renderer->SetRenderTarget(&lightFBO);
-		m_renderer->BeginFrame();
-		//lightFBO.Clear({0.1,0.1,0.2,1});
 		lightFBO.Clear(LittleEngine::Graphics::Colors::Black);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE); // Additive
+
+
+		//m_renderer->BeginFrame();
+		lightFBO.Clear({0.1,0.1,0.1,1});
+
 
 		// use awesomeface.png as light texture
-		m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
+		//m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
 
-		m_renderer->DrawRect(glm::vec4(1.f, 1.f, 1.f, 1.f), LittleEngine::Graphics::Colors::Red * lightIntensity);
+		//m_renderer->DrawRect(glm::vec4(1.f, 1.f, 1.f, 1.f), LittleEngine::Graphics::Colors::Red * lightIntensity);
+		//m_renderer->DrawRect(glm::vec4(-1.f, -2.f, 1.f, 1.f), LittleEngine::Graphics::Colors::Blue * lightIntensity);
+		
+		for (const LightSource& light : sources)
+		{
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE); // Additive
 
+			lightShader.Use();
+			lightShader.SetMat4("invProj", glm::inverse(sceneCamera.GetProjectionMatrix()));
+			lightShader.SetMat4("invView", glm::inverse(sceneCamera.GetViewMatrix()));	
+			lightShader.SetVec2("uScreenSize", lightFBO.GetSize());
+			lightShader.SetVec2("uLightPos", light.position);
+			lightShader.SetVec3("uLightColor", light.color);
+			lightShader.SetFloat("uLightRadius", light.radius);
+			lightShader.SetFloat("uLightIntensity", light.intensity);
+
+			// draw light volume
+
+			m_renderer->FlushFullscreenQuad();
+
+
+
+			//fullscreenShader.Use();
+			//m_renderer->FlushFullscreenQuad();
+
+			//m_renderer->SaveScreenshot(&lightFBO, "light");
+
+			//glDisable(GL_BLEND); 
+
+			//// draw shadows
+			shadowShader.Use();
+			shadowShader.SetMat4("proj", sceneCamera.GetProjectionMatrix());
+			shadowShader.SetMat4("view", sceneCamera.GetViewMatrix());
+			shadowShader.SetVec3("uShadowColor", {0, 0, 0});
+			//for (const Polygon& poly : obstacles)
+			//{
+			//	std::vector<ShadowQuad> shadowquads = CalculateShadowQuads(light, poly);
+			//	std::vector<glm::vec2> vertices = GetShadowTriangles(shadowquads);
+			//	for (const glm::vec2& v : poly.vertices)
+			//	{
+			//		vertices.push_back(v + light.position);
+			//	}
+
+
+			//	glBindBuffer(GL_ARRAY_BUFFER, shadowVBO);
+			//	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), vertices.data(), GL_DYNAMIC_DRAW);
+
+
+			//	glBindVertexArray(shadowVAO);
+			//	glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
+			//	glBindVertexArray(0);
+
+			//}
+		}
 
 		//m_renderer->SaveScreenshot(&lightFBO, "before");
-		m_renderer->Flush();
+		//m_renderer->Flush();
 		//m_renderer->SaveScreenshot(&lightFBO, "flush");
 
 		// restore default blending
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
-		BlurLightTexture(lightFBO, blurPasses, blurShader);
+		//BlurLightTexture(lightFBO, blurPasses, blurShader);
 		//m_renderer->SaveScreenshot(&lightFBO, "blur");
 
 
@@ -403,7 +507,20 @@ namespace game
 		m_renderer->shader.Use();
 
 
+		//// testing
+		//m_renderer->SetRenderTarget();
+		//m_renderer->shader.Use();
+		//m_renderer->BeginFrame();
+		//m_renderer->SetCamera(UICamera);
+		//m_renderer->DrawRect({ 0, 0, LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y }, lightFBO.GetTexture());
 
+		//m_renderer->Flush();
+		//m_renderer->SetCamera(sceneCamera);
+
+
+
+
+		m_renderer->shader.Use();
 
 #pragma endregion
 

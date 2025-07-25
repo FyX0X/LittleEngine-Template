@@ -11,7 +11,7 @@ void main()
     vec3 lightColor = texture(lightTexture, TexCoords).rgb;
 
     // Additive blending of light on scene
-    vec3 finalColor = sceneColor + lightColor;
+    vec3 finalColor = sceneColor * lightColor;
 
     // Optional: tone mapping or clamp
     //finalColor = finalColor / (finalColor + vec3(1.0));
