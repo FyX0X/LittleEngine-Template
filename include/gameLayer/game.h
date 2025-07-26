@@ -73,13 +73,12 @@ namespace game
 		bool edgeFacesLight(const Edge& edge, const glm::vec2& lightPos)
 		{
 			glm::vec2 edgeDir = edge.p2 - edge.p1;
-			glm::vec2 edgeNormal = glm::normalize(glm::vec2(-edgeDir.y, edgeDir.x)); // perpendicular
+			glm::vec2 edgeNormal = glm::normalize(glm::vec2(edgeDir.y, -edgeDir.x)); // right normal in CCW order is outside
 
 			glm::vec2 lightToEdge = glm::normalize(edge.p1 - lightPos);
 
-			// If the dot product between the edge normal and the vector from light to edge vertex is > 0,
-			// edge faces away from the light -> silhouette edge.
-			return glm::dot(edgeNormal, lightToEdge) > 0.f;
+			
+			return glm::dot(edgeNormal, lightToEdge) < 0.f;
 		}
 
 		struct ShadowQuad
@@ -101,8 +100,8 @@ namespace game
 					// Create shadow quad vertices
 					glm::vec2 p1 = edge.p1;
 					glm::vec2 p2 = edge.p2;
-					glm::vec2 p3 = edge.p2 + dir2 * 100.f;
-					glm::vec2 p4 = edge.p1 + dir1 * 100.f;
+					glm::vec2 p3 = edge.p2 + dir2 * light.radius * 100.f;
+					glm::vec2 p4 = edge.p1 + dir1 * light.radius * 100.f;
 					shadowQuads.push_back({ p1, p2, p3, p4 });
 				}
 			}
@@ -127,10 +126,11 @@ namespace game
 
 
 		std::vector<LightSource> sources = { 
-			{ { 3.f, 2.f }, { 1.f, 1.f, 1.f }, 1.f, 1.f },
-			{ { -3.f, -2.f }, { 1.f, 0.5f, 0.5f }, 1.f, 1.f },
-			{ { 0.f, 0.f }, { 0.5f, 0.5f, 1.f }, 10.f, 3.f}
+			{ { 3.f, 2.f }, { 1.f, 1.f, 1.f }, 1.f, 5.f},
+			{ { -3.f, -2.f }, { 1.f, 0.5f, 0.5f }, 1.f, 10.f },
+			{ { 0.f, 0.f }, { 0.5f, 0.5f, 1.f }, 3.f, 15.f}
 		};
+
 
 		std::vector<Polygon> obstacles = {};
 
@@ -210,6 +210,7 @@ namespace game
 		LittleEngine::Graphics::RenderTarget target = {};
 		LittleEngine::Graphics::RenderTarget sceneFBO = {};
 		LittleEngine::Graphics::RenderTarget lightFBO = {};
+		LittleEngine::Graphics::RenderTarget tempLightFBO = {};
 
 		LittleEngine::Graphics::Camera sceneCamera = {};
 		LittleEngine::Graphics::Camera UICamera = {};
@@ -223,6 +224,7 @@ namespace game
 
 
 		LittleEngine::Graphics::Shader fullscreenShader = {};
+		LittleEngine::Graphics::Shader fullscreenImageBlitShader = {};
 
 
 

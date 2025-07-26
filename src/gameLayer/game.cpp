@@ -82,8 +82,9 @@ namespace game
 		shadowShader.Create(RESOURCES_PATH "shadow.vert", RESOURCES_PATH "shadow.frag", true);
 
 		fullscreenShader.Create(RESOURCES_PATH "fullscreen.vert", RESOURCES_PATH "test.frag", true);
+		fullscreenImageBlitShader.Create(RESOURCES_PATH "fullscreen.vert", RESOURCES_PATH "fullscreen_image_blit.frag", true);
 
-		// generate obstacles
+		// generate obstacles in counter clockwise order
 		Polygon poly = {};
 		poly.vertices = {
 			{ -1.f, -1.f },
@@ -99,7 +100,16 @@ namespace game
 
 			{ -3.f, -3.f },
 			{ -2.f, -3.f },
-			{ 3.f, -2.f }
+			{ -1.f, -2.f }
+		};
+
+		poly.BuildEdges();
+		obstacles.push_back(poly);
+
+		poly.vertices = {
+			{ -4.f, 3.f },
+			{ -3.f, 4.f },
+			{ -4.f, 5.f }
 		};
 
 		poly.BuildEdges();
@@ -410,10 +420,11 @@ namespace game
 		m_renderer->SetRenderTarget(&lightFBO);
 		lightFBO.Clear(LittleEngine::Graphics::Colors::Black);
 
-
+		glm::vec3 defaultShadowColor = { 0.1, 0.1, 0.1 };
+		defaultShadowColor *= 0;
 
 		//m_renderer->BeginFrame();
-		lightFBO.Clear({0.1,0.1,0.1,1});
+		//lightFBO.Clear(glm::vec4(defaultShadowColor, 1));
 
 
 		// use awesomeface.png as light texture
@@ -424,8 +435,12 @@ namespace game
 		
 		for (const LightSource& light : sources)
 		{
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ONE); // Additive
+
+			glDisable(GL_BLEND); 
+
+			m_renderer->SetRenderTarget(&tempLightFBO);
+			tempLightFBO.Clear(LittleEngine::Graphics::Colors::Black);
+
 
 			lightShader.Use();
 			lightShader.SetMat4("invProj", glm::inverse(sceneCamera.GetProjectionMatrix()));
@@ -442,37 +457,43 @@ namespace game
 
 
 
-			//fullscreenShader.Use();
-			//m_renderer->FlushFullscreenQuad();
-
-			//m_renderer->SaveScreenshot(&lightFBO, "light");
-
-			//glDisable(GL_BLEND); 
 
 			//// draw shadows
 			shadowShader.Use();
 			shadowShader.SetMat4("proj", sceneCamera.GetProjectionMatrix());
 			shadowShader.SetMat4("view", sceneCamera.GetViewMatrix());
-			shadowShader.SetVec3("uShadowColor", {0, 0, 0});
-			//for (const Polygon& poly : obstacles)
-			//{
-			//	std::vector<ShadowQuad> shadowquads = CalculateShadowQuads(light, poly);
-			//	std::vector<glm::vec2> vertices = GetShadowTriangles(shadowquads);
-			//	for (const glm::vec2& v : poly.vertices)
-			//	{
-			//		vertices.push_back(v + light.position);
-			//	}
+			shadowShader.SetVec3("uShadowColor", defaultShadowColor);
+			for (const Polygon& poly : obstacles)
+			{
+				std::vector<ShadowQuad> shadowquads = CalculateShadowQuads(light, poly);
+				std::vector<glm::vec2> vertices = GetShadowTriangles(shadowquads);
 
 
-			//	glBindBuffer(GL_ARRAY_BUFFER, shadowVBO);
-			//	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), vertices.data(), GL_DYNAMIC_DRAW);
+
+				glBindBuffer(GL_ARRAY_BUFFER, shadowVBO);
+				glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), vertices.data(), GL_DYNAMIC_DRAW);
 
 
-			//	glBindVertexArray(shadowVAO);
-			//	glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
-			//	glBindVertexArray(0);
+				glBindVertexArray(shadowVAO);
+				glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
+				glBindVertexArray(0);
 
-			//}
+			}
+
+			// add the light texture to the lightFBO
+			m_renderer->SetRenderTarget(&lightFBO);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE); // Additive
+
+			fullscreenImageBlitShader.Use();
+			fullscreenImageBlitShader.SetInt("uTexture", 0);
+			tempLightFBO.GetTexture().Bind(0);
+
+			m_renderer->FlushFullscreenQuad();
+
+
+
+
 		}
 
 		//m_renderer->SaveScreenshot(&lightFBO, "before");
@@ -507,6 +528,8 @@ namespace game
 		m_renderer->shader.Use();
 
 
+
+
 		//// testing
 		//m_renderer->SetRenderTarget();
 		//m_renderer->shader.Use();
@@ -516,6 +539,13 @@ namespace game
 
 		//m_renderer->Flush();
 		//m_renderer->SetCamera(sceneCamera);
+
+		//fullscreenImageBlitShader.Use();
+		//fullscreenImageBlitShader.SetInt("uTexture", 0);
+		//lightFBO.GetTexture().Bind(0);
+		//m_renderer->FlushFullscreenQuad();
+
+
 
 
 
@@ -674,6 +704,7 @@ namespace game
 
 		sceneFBO.Create(LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y, GL_RGB);
 		lightFBO.Create(LittleEngine::GetWindowSize().x / downscaleFactor, LittleEngine::GetWindowSize().y / downscaleFactor, GL_RGB16F);
+		tempLightFBO.Create(LittleEngine::GetWindowSize().x / downscaleFactor, LittleEngine::GetWindowSize().y / downscaleFactor, GL_RGB16F);
 
 	}
 	void Game::BlurLightTexture(LittleEngine::Graphics::RenderTarget& lightFBO, int passes, LittleEngine::Graphics::Shader& shader)
