@@ -13,7 +13,7 @@
 
 #include <LittleEngine/little_engine.h>
 
-#include <LittleEngine/error_logger.h>
+//#include <LittleEngine/error_logger.h>
 
 
 
@@ -85,35 +85,35 @@ namespace game
 		fullscreenImageBlitShader.Create(RESOURCES_PATH "fullscreen.vert", RESOURCES_PATH "fullscreen_image_blit.frag", true);
 
 		// generate obstacles in counter clockwise order
-		Polygon poly = {};
-		poly.vertices = {
-			{ -1.f, -1.f },
-			{ 1.f, -1.f },
-			{ 1.f, 1.f },
-			{ -1.f, 1.f }
-		};
-		poly.BuildEdges();
+		//Polygon poly = {};
+		//poly.vertices = {
+		//	{ -1.f, -1.f },
+		//	{ 1.f, -1.f },
+		//	{ 1.f, 1.f },
+		//	{ -1.f, 1.f }
+		//};
+		//poly.BuildEdges();
 
-		obstacles.push_back(poly);
+		//obstacles.push_back(poly);
 
-		poly.vertices = {
+		//poly.vertices = {
 
-			{ -3.f, -3.f },
-			{ -2.f, -3.f },
-			{ -1.f, -2.f }
-		};
+		//	{ -3.f, -3.f },
+		//	{ -2.f, -3.f },
+		//	{ -1.f, -2.f }
+		//};
 
-		poly.BuildEdges();
-		obstacles.push_back(poly);
+		//poly.BuildEdges();
+		//obstacles.push_back(poly);
 
-		poly.vertices = {
-			{ -4.f, 3.f },
-			{ -3.f, 4.f },
-			{ -4.f, 5.f }
-		};
+		//poly.vertices = {
+		//	{ -4.f, 3.f },
+		//	{ -3.f, 4.f },
+		//	{ -4.f, 5.f }
+		//};
 
-		poly.BuildEdges();
-		obstacles.push_back(poly);
+		//poly.BuildEdges();
+		//obstacles.push_back(poly);
 
 
 
@@ -160,6 +160,8 @@ namespace game
 			}
 		}
 
+
+#pragma region keybindings
 
 		// create axis
 		//LittleEngine::Input::RegisterAxis("vertical");
@@ -276,8 +278,77 @@ namespace game
 			void OnHold() override {}
 		};
 
+		class UpdatePointPosCommand : public LittleEngine::Input::Command {
+			glm::vec2& pos;
+			LittleEngine::Graphics::Camera& camera;
+		public:
+			UpdatePointPosCommand(glm::vec2& p, LittleEngine::Graphics::Camera& c) : pos(p), camera(c) {}
+			std::string GetName() const override { return "UpdatePointPos"; }
+
+			void OnPress() override {
+				// update position to mouse position
+				glm::ivec2 screenPos = LittleEngine::Input::GetMousePosition();
+				glm::vec2 ndc;
+				ndc.x = (2.0f * screenPos.x) / camera.viewportSize.x - 1.0f;
+				ndc.y = -((2.0f * screenPos.y) / camera.viewportSize.y - 1.0f); // flip y
+
+				// Homogeneous clip space (z=0, w=1 for 2D)
+				glm::vec4 clipPos(ndc, 0.0f, 1.0f);
+
+				// Compute inverse view-projection
+				glm::mat4 invViewProj = glm::inverse(camera.GetProjectionMatrix() * camera.GetViewMatrix());
+
+				// Transform to world space
+				glm::vec4 worldPos = invViewProj * clipPos;
+
+				pos.x = worldPos.x / worldPos.w; // divide by w to get correct position
+				pos.y = worldPos.y / worldPos.w; // divide by w to get correct position
+
+			}
+		};
+
+		class AddPointCommand : public LittleEngine::Input::Command {
+			LittleEngine::Polygon& poly;
+			LittleEngine::Graphics::Camera& camera;
+		public:
+			AddPointCommand(LittleEngine::Polygon& p, LittleEngine::Graphics::Camera& c) : poly(p), camera(c) {}
+			std::string GetName() const override { return "AddPoint"; }
+			void OnPress() override {
+				// add point to polygon at mouse position
+				glm::ivec2 screenPos = LittleEngine::Input::GetMousePosition();
+				glm::vec2 ndc;
+				ndc.x = (2.0f * screenPos.x) / camera.viewportSize.x - 1.0f;
+				ndc.y = -((2.0f * screenPos.y) / camera.viewportSize.y - 1.0f); // flip y
+				// Homogeneous clip space (z=0, w=1 for 2D)
+				glm::vec4 clipPos(ndc, 0.0f, 1.0f);
+				// Compute inverse view-projection
+				glm::mat4 invViewProj = glm::inverse(camera.GetProjectionMatrix() * camera.GetViewMatrix());
+				// Transform to world space
+				glm::vec4 worldPos = invViewProj * clipPos;
+				poly.vertices.push_back({ worldPos.x / worldPos.w, worldPos.y / worldPos.w });
+			}
+		};
+
+		class ResetPolygonCommand : public LittleEngine::Input::Command {
+			LittleEngine::Polygon& poly;
+		public:
+			ResetPolygonCommand(LittleEngine::Polygon& p) : poly(p) {}
+			std::string GetName() const override { return "ResetPolygon"; }
+			void OnPress() override {
+				poly.vertices.clear();
+			}
+		};
+
 #pragma endregion
 
+
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_U, std::make_unique<UpdatePointPosCommand>(m_data.A, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_I, std::make_unique<UpdatePointPosCommand>(m_data.B, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_O, std::make_unique<UpdatePointPosCommand>(m_data.C, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_P, std::make_unique<UpdatePointPosCommand>(m_data.D, sceneCamera));
+
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_T, std::make_unique<AddPointCommand>(polygon, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_R, std::make_unique<ResetPolygonCommand>(polygon));
 
 		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<ColorCommand>(m_data.color));
 		//LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<JumpCommand>(m_data.rectPos));
@@ -287,6 +358,30 @@ namespace game
 		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_F11, std::make_unique<ScreenshotCommand>(m_renderer.get()));
 		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_F10, std::make_unique<SaveRenderTargetCommand>(m_renderer.get(), target));
 
+#pragma endregion
+
+
+
+		// TESTING
+		std::cout << "test\n";
+
+		glm::vec2 a = { 0, 0 };
+		glm::vec2 b = { 1, 0 };
+		glm::vec2 c = { 2, 0 };
+
+		LittleEngine::Edge e1 = { a, c };
+
+		LittleEngine::Edge e2 = { b, c };
+
+		// triangle in CCW order
+
+		std::cout << "Triangle signed area: " << LittleEngine::TriangleSignedArea(a, b, c) << "\n";
+		std::cout << "Three point orientation: " << LittleEngine::ThreePointOrientation(a, b, c) << "\n";
+
+		std::cout << "b on AC: " << LittleEngine::PointOnSegment(b, e1) << "\n";
+		std::cout << "a on BC: " << LittleEngine::PointOnSegment(a, e2) << "\n";
+		std::cout << "c on AC: " << LittleEngine::PointOnSegment(c, e1) << "\n";
+		std::cout << "(1, 0.1) on AC: " << LittleEngine::PointOnSegment({ 1, 0.1f }, e1) << "\n";
 
 
 		//loading the saved data. Loading an entire structure like this makes savind game data very easy.
@@ -338,15 +433,15 @@ namespace game
 
 		m_data.pos2 += move * 10.f * dt;
 
-		vert = LittleEngine::Input::GetAxis("vertical3");
-		hori = LittleEngine::Input::GetAxis("horizontal3");
+		//vert = LittleEngine::Input::GetAxis("vertical3");
+		//hori = LittleEngine::Input::GetAxis("horizontal3");
 
-		move = { hori, vert };
-		length = glm::length(move);
-		if (length > 1)
-			move /= length;
+		//move = { hori, vert };
+		//length = glm::length(move);
+		//if (length > 1)
+		//	move /= length;
 
-		sources[2].position += move * 10.f * dt;
+		//sources[2].position += move * 10.f * dt;
 
 
 
@@ -369,10 +464,10 @@ namespace game
 
 #pragma region Scene Render
 		// render scene to fbo
-		//m_renderer->BeginFrame();
+		m_renderer->BeginFrame();
 
-		m_renderer->SetRenderTarget(&sceneFBO);
-		sceneFBO.Clear();
+		//m_renderer->SetRenderTarget(&sceneFBO);
+		//sceneFBO.Clear();
 
 
 		// green block from (-10, -10) to (0 0)
@@ -408,6 +503,45 @@ namespace game
 		m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
 
 
+		LittleEngine::Edge e1 = { m_data.A, m_data.B };
+		LittleEngine::Edge e2 = { m_data.C, m_data.D };
+
+		LittleEngine::Graphics::Color c;
+		if (LittleEngine::SegmentsIntersect(e1, e2))
+		{
+			c = LittleEngine::Graphics::Colors::Green;
+		}
+		else
+		{
+			c = LittleEngine::Graphics::Colors::Red;
+		}
+		
+		m_renderer->DrawLine(e1, 0.1f, c);
+		m_renderer->DrawLine(e2, 0.1f, c);
+
+
+		// draw polygon
+		if (polygon.IsValid())
+		{
+			if (outlineMode)
+			{
+				m_renderer->DrawPolygonOutline(polygon, 0.1f, LittleEngine::Graphics::Colors::White);
+			}
+			else
+			{
+				m_renderer->DrawPolygon(polygon, LittleEngine::Graphics::Colors::White);
+			}
+		}
+		else
+		{
+			std::cout << "Polygon is not valid\n";
+			for (const glm::vec2& v : polygon.vertices)
+			{
+				std::cout << v.x << " " << v.y << "\n";
+			}
+		}
+
+
 
 		m_renderer->Flush();
 
@@ -417,11 +551,11 @@ namespace game
 
 #pragma region Light Render
 
-		m_renderer->SetRenderTarget(&lightFBO);
-		lightFBO.Clear(LittleEngine::Graphics::Colors::Black);
+		//m_renderer->SetRenderTarget(&lightFBO);
+		//lightFBO.Clear(LittleEngine::Graphics::Colors::Black);
 
-		glm::vec3 defaultShadowColor = { 0.1, 0.1, 0.1 };
-		defaultShadowColor *= 0;
+		//glm::vec3 defaultShadowColor = { 0.1, 0.1, 0.1 };
+		//defaultShadowColor *= 0;
 
 		//m_renderer->BeginFrame();
 		//lightFBO.Clear(glm::vec4(defaultShadowColor, 1));
@@ -433,99 +567,102 @@ namespace game
 		//m_renderer->DrawRect(glm::vec4(1.f, 1.f, 1.f, 1.f), LittleEngine::Graphics::Colors::Red * lightIntensity);
 		//m_renderer->DrawRect(glm::vec4(-1.f, -2.f, 1.f, 1.f), LittleEngine::Graphics::Colors::Blue * lightIntensity);
 		
-		for (const LightSource& light : sources)
-		{
+		//for (const LightSource& light : sources)
+		//{
 
-			glDisable(GL_BLEND); 
+		//	glDisable(GL_BLEND); 
 
-			m_renderer->SetRenderTarget(&tempLightFBO);
-			tempLightFBO.Clear(LittleEngine::Graphics::Colors::Black);
-
-
-			lightShader.Use();
-			lightShader.SetMat4("invProj", glm::inverse(sceneCamera.GetProjectionMatrix()));
-			lightShader.SetMat4("invView", glm::inverse(sceneCamera.GetViewMatrix()));	
-			lightShader.SetVec2("uScreenSize", lightFBO.GetSize());
-			lightShader.SetVec2("uLightPos", light.position);
-			lightShader.SetVec3("uLightColor", light.color);
-			lightShader.SetFloat("uLightRadius", light.radius);
-			lightShader.SetFloat("uLightIntensity", light.intensity);
-
-			// draw light volume
-
-			m_renderer->FlushFullscreenQuad();
+		//	m_renderer->SetRenderTarget(&tempLightFBO);
+		//	tempLightFBO.Clear(LittleEngine::Graphics::Colors::Black);
 
 
+		//	lightShader.Use();
+		//	lightShader.SetMat4("invProj", glm::inverse(sceneCamera.GetProjectionMatrix()));
+		//	lightShader.SetMat4("invView", glm::inverse(sceneCamera.GetViewMatrix()));	
+		//	lightShader.SetVec2("uScreenSize", lightFBO.GetSize());
+		//	lightShader.SetVec2("uLightPos", light.position);
+		//	lightShader.SetVec3("uLightColor", light.color);
+		//	lightShader.SetFloat("uLightRadius", light.radius);
+		//	lightShader.SetFloat("uLightIntensity", light.intensity);
+
+		//	// draw light volume
+
+		//	m_renderer->FlushFullscreenQuad();
 
 
-			//// draw shadows
-			shadowShader.Use();
-			shadowShader.SetMat4("proj", sceneCamera.GetProjectionMatrix());
-			shadowShader.SetMat4("view", sceneCamera.GetViewMatrix());
-			shadowShader.SetVec3("uShadowColor", defaultShadowColor);
-			for (const Polygon& poly : obstacles)
-			{
-				std::vector<ShadowQuad> shadowquads = CalculateShadowQuads(light, poly);
-				std::vector<glm::vec2> vertices = GetShadowTriangles(shadowquads);
+		//	if (enableShadows)
+		//	{
 
-
-
-				glBindBuffer(GL_ARRAY_BUFFER, shadowVBO);
-				glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), vertices.data(), GL_DYNAMIC_DRAW);
-
-
-				glBindVertexArray(shadowVAO);
-				glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
-				glBindVertexArray(0);
-
-			}
-
-			// add the light texture to the lightFBO
-			m_renderer->SetRenderTarget(&lightFBO);
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ONE); // Additive
-
-			fullscreenImageBlitShader.Use();
-			fullscreenImageBlitShader.SetInt("uTexture", 0);
-			tempLightFBO.GetTexture().Bind(0);
-
-			m_renderer->FlushFullscreenQuad();
+		//		//// draw shadows
+		//		shadowShader.Use();
+		//		shadowShader.SetMat4("proj", sceneCamera.GetProjectionMatrix());
+		//		shadowShader.SetMat4("view", sceneCamera.GetViewMatrix());
+		//		shadowShader.SetVec3("uShadowColor", defaultShadowColor);
+		//		for (const Polygon& poly : obstacles)
+		//		{
+		//			std::vector<ShadowQuad> shadowquads = CalculateShadowQuads(light, poly);
+		//			std::vector<glm::vec2> vertices = GetShadowTriangles(shadowquads);
 
 
 
-
-		}
-
-		//m_renderer->SaveScreenshot(&lightFBO, "before");
-		//m_renderer->Flush();
-		//m_renderer->SaveScreenshot(&lightFBO, "flush");
-
-		// restore default blending
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//			glBindBuffer(GL_ARRAY_BUFFER, shadowVBO);
+		//			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), vertices.data(), GL_DYNAMIC_DRAW);
 
 
-		//BlurLightTexture(lightFBO, blurPasses, blurShader);
-		//m_renderer->SaveScreenshot(&lightFBO, "blur");
+		//			glBindVertexArray(shadowVAO);
+		//			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
+		//			glBindVertexArray(0);
+
+		//		}
+		//	}
+
+
+		//	// add the light texture to the lightFBO
+		//	m_renderer->SetRenderTarget(&lightFBO);
+		//	glEnable(GL_BLEND);
+		//	glBlendFunc(GL_ONE, GL_ONE); // Additive
+
+		//	fullscreenImageBlitShader.Use();
+		//	fullscreenImageBlitShader.SetInt("uTexture", 0);
+		//	tempLightFBO.GetTexture().Bind(0);
+
+		//	m_renderer->FlushFullscreenQuad();
+
+
+
+
+		//}
+
+		////m_renderer->SaveScreenshot(&lightFBO, "before");
+		////m_renderer->Flush();
+		////m_renderer->SaveScreenshot(&lightFBO, "flush");
+
+		//// restore default blending
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+		////BlurLightTexture(lightFBO, blurPasses, blurShader);
+		////m_renderer->SaveScreenshot(&lightFBO, "blur");
 
 
 
 
 #pragma endregion
 
-		m_renderer->SetRenderTarget();
+		//m_renderer->SetRenderTarget();
 
-		lightSceneMergingShader.Use();
+		//lightSceneMergingShader.Use();
 
-		lightSceneMergingShader.SetInt("sceneTexture", 0);
-		lightSceneMergingShader.SetInt("lightTexture", 1);
+		//lightSceneMergingShader.SetInt("sceneTexture", 0);
+		//lightSceneMergingShader.SetInt("lightTexture", 1);
 
-		sceneFBO.GetTexture().Bind(0);
-		lightFBO.GetTexture().Bind(1);
+		//sceneFBO.GetTexture().Bind(0);
+		//lightFBO.GetTexture().Bind(1);
 
-		m_renderer->FlushFullscreenQuad();
+		//m_renderer->FlushFullscreenQuad();
 
 
-		m_renderer->shader.Use();
+		//m_renderer->shader.Use();
 
 
 
@@ -572,6 +709,8 @@ namespace game
 			// resize the render targets
 			ResizeFBOs();
 		}
+		ImGui::Checkbox("Enable Shadows", &enableShadows);
+		ImGui::Checkbox("Outline Mode", &outlineMode);
 		//ImGui::SliderFloat("Camera x", &m_data.rectPos.x, -50.f, 50.f);
 		//ImGui::SliderFloat("Camera y", &m_data.rectPos.y, -50.f, 50.f);
 		//ImGui::SliderFloat("Red", &color.x, 0.f, 1.f);
