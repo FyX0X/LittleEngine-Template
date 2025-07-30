@@ -33,6 +33,55 @@ namespace game
 
 	bool Game::Initialize()
 	{
+		InitializeEngine();
+
+		InitializeResources();
+
+		InitializeInput();
+
+		InitializeUI();
+
+		InitializeScene();
+
+		InitializeLight();
+
+
+		
+
+
+
+
+		// TESTING
+		std::cout << "test\n";
+
+		glm::vec2 a = { 0, 0 };
+		glm::vec2 b = { 1, 0 };
+		glm::vec2 c = { 2, 0 };
+
+		LittleEngine::Edge e1 = { a, c };
+
+		LittleEngine::Edge e2 = { b, c };
+
+		// triangle in CCW order
+
+		std::cout << "Triangle signed area: " << LittleEngine::TriangleSignedArea(a, b, c) << "\n";
+		std::cout << "Three point orientation: " << LittleEngine::ThreePointOrientation(a, b, c) << "\n";
+
+		std::cout << "b on AC: " << LittleEngine::PointOnSegment(b, e1) << "\n";
+		std::cout << "a on BC: " << LittleEngine::PointOnSegment(a, e2) << "\n";
+		std::cout << "c on AC: " << LittleEngine::PointOnSegment(c, e1) << "\n";
+		std::cout << "(1, 0.1) on AC: " << LittleEngine::PointOnSegment({ 1, 0.1f }, e1) << "\n";
+
+
+		//loading the saved data. Loading an entire structure like this makes savind game data very easy.
+		//platform::readEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData));
+
+		return true;
+	}
+
+
+	void Game::InitializeEngine()
+	{
 		m_renderer = std::make_unique<LittleEngine::Graphics::Renderer>();
 		m_renderer->Initialize(sceneCamera, LittleEngine::GetWindowSize());
 
@@ -42,133 +91,36 @@ namespace game
 		m_audioSystem = std::make_unique<LittleEngine::Audio::AudioSystem>();
 		m_audioSystem->Initialize();
 
+		m_uiSystem = std::make_unique<LittleEngine::UI::UISystem>();
+		m_uiSystem->Initialize(LittleEngine::GetWindowSize()); // initialize UI system with the current window size
+	}
 
-		// load resources
-
-
+	void Game::InitializeResources()
+	{
 		m_audioSystem->LoadSound(RESOURCES_PATH "test.wav", sound);
+		sound.SetPitch(pitch);
+		sound.SetVolume(volume);
+		sound.SetSpatialization(spatialized);
+		if (spatialized)
+		{
+			sound.SetMinDistance(minD);
+			sound.SetMaxDistance(maxD);
+			sound.SetMaxGain(maxG);
+			sound.SetMinGain(minG);
+			sound.SetRolloff(rolloff);
+		}
+
 		texture1.LoadFromFile(RESOURCES_PATH "test.jpg");
 		texture2.LoadFromFile(RESOURCES_PATH "awesomeface.png", true, false, true);
 		torch.LoadFromFile(RESOURCES_PATH "torch.png");
 		minecraft_blocks.LoadFromFile(RESOURCES_PATH "minecraft_atlas.png");
 		minecraft_atlas = LittleEngine::Graphics::TextureAtlas(minecraft_blocks, 16, 16);
 
-		glm::vec4 r = minecraft_atlas.GetUV(0, 0);
-		std::cout << r.x << " " << r.y << " " << r.z << " " << r.w << "\n";
-		std::cout << minecraft_atlas.textureWidth << " " << minecraft_atlas.textureHeight << " " << minecraft_atlas.cellWidth << " " << minecraft_atlas.cellHeight << "\n";
-
 		font.LoadFromTTF(RESOURCES_PATH "arial.ttf", 64.f);
+	}
 
-		//for (size_t i = 0; i < 100; i++)
-		//{
-		//	LittleEngine::Texture tex;
-		//	tex.LoadFromFile(RESOURCES_PATH "wall.jpg");
-		//	textures.push_back(tex);
-		//}
-
-
-		// Creating tilemap
-		//				0		1		2		3
-		tileIDs = { {3, 15}, {2, 15}, {1, 15}, {0, 15} };
-
-		tilemap.SetTileSetTexture(minecraft_blocks, minecraft_atlas);
-		//tilemap.SetTileSize(1.f);
-		tilemap.SetTileSetAtlasKey(tileIDs);
-		tilemap.SetMap(world, 10, 10, { 0, 0 });
-
-		//InitializeShadowBuffers();
-		// initialize the blur shader
-
-		blurShader.Create(RESOURCES_PATH "fullscreen_quad.vert", RESOURCES_PATH "blur.frag", true);
-		lightSceneMergingShader.Create(RESOURCES_PATH "fullscreen_quad.vert", RESOURCES_PATH "merge_light_scene.frag", true);
-		//lightShader.Create(RESOURCES_PATH "light.vert", RESOURCES_PATH "light.frag", true);
-		//shadowShader.Create(RESOURCES_PATH "shadow.vert", RESOURCES_PATH "shadow.frag", true);
-
-		//fullscreenShader.Create(RESOURCES_PATH "fullscreen.vert", RESOURCES_PATH "test.frag", true);
-		//fullscreenImageBlitShader.Create(RESOURCES_PATH "fullscreen.vert", RESOURCES_PATH "fullscreen_image_blit.frag", true);
-
-		// generate obstacles in counter clockwise order
-		std::vector<glm::vec2> vertices = {
-			{ -1.f, -1.f },
-			{ 1.f, -1.f },
-			{ 1.f, 1.f },
-			{ -1.f, 1.f }
-		};
-		obstacles.push_back(m_lightSystem->CreateObstacle(vertices));
-
-		vertices = {
-
-			{ -3.f, -3.f },
-			{ -2.f, -3.f },
-			{ -1.f, -2.f }
-		};
-		obstacles.push_back(m_lightSystem->CreateObstacle(vertices));
-
-		vertices = {
-			{ -4.f, 3.f },
-			{ -3.f, 4.f },
-			{ -4.f, 5.f }
-		};
-		obstacles.push_back(m_lightSystem->CreateObstacle(vertices));
-
-		lightSources.push_back(m_lightSystem->CreateLightSource({ 0.f, 0.f }, { 1.f, 1.f, 1.f }, 1.f, 10.f));
-		lightSources.push_back(m_lightSystem->CreateLightSource({ 3.f, 3.f }, { 0.f, 1.f, 1.f }, 1.f, 4.f));
-		lightSources.push_back(m_lightSystem->CreateLightSource({ -3.f, -3.f }, { 1.f, 0.f, .5f }, 2.f, 15.f));
-
-
-
-		// initialize the render targets
-		ResizeFBOs();
-		
-		// create custom texture with render target
-
-		sceneCamera.centered = true;	// center camera on screen
-		sceneCamera.viewportSize = LittleEngine::GetWindowSize();
-		UICamera.viewportSize = LittleEngine::GetWindowSize();
-
-		target.Create(100, 100);
-		m_renderer->SetRenderTarget(&target);
-
-		LittleEngine::Graphics::Camera tempCamera = UICamera;
-		tempCamera.viewportSize = (glm::vec2)target.GetSize();
-		m_renderer->SetCamera(tempCamera);
-
-		m_renderer->DrawRect({ 0, 0, 100, 100 }, texture2);
-		m_renderer->DrawString("target", { 10, 100 }, LittleEngine::Graphics::Colors::White, 10);
-
-		m_renderer->Flush();
-		m_renderer->SetRenderTarget();
-
-		m_renderer->SetCamera(sceneCamera);
-		
-
-
-		for (int i = 0; i < 100; i++)
-		{
-			glm::vec4 r = { 0, 0, 0.8f, 0.8f };
-			r.x = (i % 10) - 5;     // x goes from -5 to +4 across columns
-			r.y = (i / 10) - 5;     // y goes from -5 to +4 across rows
-			rect.push_back(r);
-			if (i >= 90)
-			{
-				rect_uv.push_back(minecraft_atlas.GetUV(3, 15));
-			}
-			else
-			{
-				rect_uv.push_back(minecraft_atlas.GetUV(2, 15));
-			}
-		}
-
-
-#pragma region keybindings
-
-		// create axis
-		//LittleEngine::Input::RegisterAxis("vertical");
-		//LittleEngine::Input::RegisterAxis("horizontal");
-		//LittleEngine::Input::BindKeysToAxis(GLFW_KEY_W, GLFW_KEY_S, "vertical");
-		//LittleEngine::Input::BindKeysToAxis(GLFW_KEY_UP, GLFW_KEY_DOWN, "vertical");
-		//LittleEngine::Input::BindKeysToAxis(GLFW_KEY_D, GLFW_KEY_A, "horizontal");
-		//LittleEngine::Input::BindKeysToAxis(GLFW_KEY_RIGHT, GLFW_KEY_LEFT, "horizontal");
+	void Game::InitializeInput()
+	{
 
 		// Register two separate axes
 		LittleEngine::Input::RegisterAxis("vertical");
@@ -200,7 +152,7 @@ namespace game
 		public:
 			ZoomCommand(float& zoom) : zoom(zoom) {}
 			std::string GetName() const override { return "Zoom"; }
-			
+
 			void OnPress() override { zoom *= 2.f; }
 			void OnHold() override {
 				zoom *= 0.99f;
@@ -235,11 +187,12 @@ namespace game
 			LittleEngine::Graphics::RenderTarget& target;
 		public:
 			SaveRenderTargetCommand(LittleEngine::Graphics::Renderer* r,
-				LittleEngine::Graphics::RenderTarget& t) : renderer(r), target(t) {}
-			
+				LittleEngine::Graphics::RenderTarget& t) : renderer(r), target(t) {
+			}
+
 			std::string GetName() const override { return "SaveRenderTarget"; }
 
-			void OnPress() override { 
+			void OnPress() override {
 				std::cout << "hello before: ";
 				renderer->SaveScreenshot(&target);
 				std::cout << "hello after\n ";
@@ -253,7 +206,7 @@ namespace game
 			ColorCommand(LittleEngine::Graphics::Color& c) : color(c) {}
 			std::string GetName() const override { return "Color"; }
 
-			void OnPress() override { 
+			void OnPress() override {
 				float f = (rand() % 1000) / 1000.f;
 				color = f * LittleEngine::Graphics::Colors::Green;
 				color.w = 1.f;
@@ -289,7 +242,7 @@ namespace game
 				glm::ivec2 screenPos = LittleEngine::Input::GetMousePosition();
 				glm::vec2 ndc;
 				ndc.x = (2.0f * screenPos.x) / camera.viewportSize.x - 1.0f;
-				ndc.y = -((2.0f * screenPos.y) / camera.viewportSize.y - 1.0f); // flip y
+				ndc.y = ((2.0f * screenPos.y) / camera.viewportSize.y - 1.0f);
 
 				// Homogeneous clip space (z=0, w=1 for 2D)
 				glm::vec4 clipPos(ndc, 0.0f, 1.0f);
@@ -317,7 +270,7 @@ namespace game
 				glm::ivec2 screenPos = LittleEngine::Input::GetMousePosition();
 				glm::vec2 ndc;
 				ndc.x = (2.0f * screenPos.x) / camera.viewportSize.x - 1.0f;
-				ndc.y = -((2.0f * screenPos.y) / camera.viewportSize.y - 1.0f); // flip y
+				ndc.y = ((2.0f * screenPos.y) / camera.viewportSize.y - 1.0f);
 				// Homogeneous clip space (z=0, w=1 for 2D)
 				glm::vec4 clipPos(ndc, 0.0f, 1.0f);
 				// Compute inverse view-projection
@@ -357,38 +310,134 @@ namespace game
 		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_F11, std::make_unique<ScreenshotCommand>(m_renderer.get()));
 		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_F10, std::make_unique<SaveRenderTargetCommand>(m_renderer.get(), target));
 
-#pragma endregion
-
-
-
-		// TESTING
-		std::cout << "test\n";
-
-		glm::vec2 a = { 0, 0 };
-		glm::vec2 b = { 1, 0 };
-		glm::vec2 c = { 2, 0 };
-
-		LittleEngine::Edge e1 = { a, c };
-
-		LittleEngine::Edge e2 = { b, c };
-
-		// triangle in CCW order
-
-		std::cout << "Triangle signed area: " << LittleEngine::TriangleSignedArea(a, b, c) << "\n";
-		std::cout << "Three point orientation: " << LittleEngine::ThreePointOrientation(a, b, c) << "\n";
-
-		std::cout << "b on AC: " << LittleEngine::PointOnSegment(b, e1) << "\n";
-		std::cout << "a on BC: " << LittleEngine::PointOnSegment(a, e2) << "\n";
-		std::cout << "c on AC: " << LittleEngine::PointOnSegment(c, e1) << "\n";
-		std::cout << "(1, 0.1) on AC: " << LittleEngine::PointOnSegment({ 1, 0.1f }, e1) << "\n";
-
-
-		//loading the saved data. Loading an entire structure like this makes savind game data very easy.
-		//platform::readEntireFile(RESOURCES_PATH "gameData.data", &gameData, sizeof(GameData));
-
-		return true;
 	}
 
+	void Game::InitializeUI()
+	{	
+		LittleEngine::UI::UIContext* hud = m_uiSystem->CreateContext("HUD");
+		LittleEngine::UI::UIContext* menu = m_uiSystem->CreateContext("Menu");
+
+
+		// add elements
+		glm::ivec2 size = LittleEngine::GetWindowSize();
+
+		LittleEngine::UI::UIElement* label;
+		label = hud->AddElement(std::make_unique<LittleEngine::UI::UILabel>(glm::vec2{5, size.y * 0.95}, "Hello World!", 32.f));
+		
+		std::unique_ptr<LittleEngine::UI::UIButton> button = std::make_unique<LittleEngine::UI::UIButton>(
+			glm::vec2{ size.x / 2 - 50, size.x * 0.6f }, 
+			glm::vec2{100, 50}, "Button");
+		
+		button->SetOnClickCallback([&]() {
+			std::cout << "Button clicked!\n";
+			m_uiSystem->ToggleContext("Menu");	// toggle HUD context
+		});
+		hud->AddElement(std::move(button));
+		
+		menu->AddElement(std::make_unique<LittleEngine::UI::UILabel>(glm::vec2{ size.x / 2 - 30, size.y * 0.9f }, "Menu", 32.f));
+
+		std::unique_ptr<LittleEngine::UI::UICheckbox> cb = std::make_unique<LittleEngine::UI::UICheckbox>(
+			glm::vec2{ size.x / 2 - 50, size.x * 0.4f }, 
+			40.f, "Checkbox", false);
+
+		cb->SetOnToggleCallback([&](bool state) {
+			std::cout << "Checkbox state: " << (state ? "Checked" : "Unchecked") << "\n";
+			});
+		
+		menu->AddElement(std::move(cb));
+
+		m_uiSystem->ShowContext("HUD");	// show HUD context by default
+	}
+
+	void Game::InitializeScene()
+	{
+		ResizeFBOs();
+
+		// Creating tilemap
+		//				0		1		2		3
+		tileIDs = { {3, 15}, {2, 15}, {1, 15}, {0, 15} };
+
+		tilemap.SetTileSetTexture(minecraft_blocks, minecraft_atlas);
+		//tilemap.SetTileSize(1.f);
+		tilemap.SetTileSetAtlasKey(tileIDs);
+		tilemap.SetMap(world, 10, 10, { 0, 0 });
+
+		// create custom texture with render target
+
+		sceneCamera.centered = true;	// center camera on screen
+		sceneCamera.viewportSize = LittleEngine::GetWindowSize();
+
+		target.Create(100, 100);
+		m_renderer->SetRenderTarget(&target);
+
+		LittleEngine::Graphics::Camera tempCamera = sceneCamera;
+		tempCamera.centered = false;	// do not center camera on screen
+
+		tempCamera.viewportSize = (glm::vec2)target.GetSize();
+		m_renderer->SetCamera(tempCamera);
+
+		m_renderer->DrawRect({ 0, 0, 100, 100 }, texture2);
+		m_renderer->DrawString("target", { 10, 100 }, LittleEngine::Graphics::Colors::White, 10);
+
+		m_renderer->Flush();
+		m_renderer->SetRenderTarget();
+
+		m_renderer->SetCamera(sceneCamera);
+
+
+
+		for (int i = 0; i < 100; i++)
+		{
+			glm::vec4 r = { 0, 0, 0.8f, 0.8f };
+			r.x = (i % 10) - 5;     // x goes from -5 to +4 across columns
+			r.y = (i / 10) - 5;     // y goes from -5 to +4 across rows
+			rect.push_back(r);
+			if (i >= 90)
+			{
+				rect_uv.push_back(minecraft_atlas.GetUV(3, 15));
+			}
+			else
+			{
+				rect_uv.push_back(minecraft_atlas.GetUV(2, 15));
+			}
+		}
+	}
+
+	void Game::InitializeLight()
+	{
+
+		blurShader.Create(RESOURCES_PATH "fullscreen_quad.vert", RESOURCES_PATH "blur.frag", true);
+		//lightSceneMergingShader.Create(RESOURCES_PATH "fullscreen_quad.vert", RESOURCES_PATH "merge_light_scene.frag", true);
+
+		std::vector<glm::vec2> vertices = {
+			{ -1.f, -1.f },
+			{ 1.f, -1.f },
+			{ 1.f, 1.f },
+			{ -1.f, 1.f }
+		};
+		obstacles.push_back(m_lightSystem->CreateObstacle(vertices));
+
+		vertices = {
+
+			{ -3.f, -3.f },
+			{ -2.f, -3.f },
+			{ -1.f, -2.f }
+		};
+		obstacles.push_back(m_lightSystem->CreateObstacle(vertices));
+
+		vertices = {
+			{ -4.f, 3.f },
+			{ -3.f, 4.f },
+			{ -4.f, 5.f }
+		};
+		obstacles.push_back(m_lightSystem->CreateObstacle(vertices));
+
+		lightSources.push_back(m_lightSystem->CreateLightSource({ 0.f, 0.f }, { 1.f, 1.f, 1.f }, 1.f, 10.f));
+		lightSources.push_back(m_lightSystem->CreateLightSource({ 3.f, 3.f }, { 0.f, 1.f, 1.f }, 1.f, 4.f));
+		lightSources.push_back(m_lightSystem->CreateLightSource({ -3.f, -3.f }, { 1.f, 0.f, .5f }, 2.f, 15.f));
+
+
+	}
 
 	void Game::Shutdown()
 	{
@@ -450,6 +499,8 @@ namespace game
 
 		m_audioSystem->SetListenerPosition(m_data.rectPos.x, m_data.rectPos.y);
 
+
+		m_uiSystem->Update();
 
 	}
 
@@ -531,14 +582,7 @@ namespace game
 				m_renderer->DrawPolygon(polygon, LittleEngine::Graphics::Colors::White);
 			}
 		}
-		else
-		{
-			std::cout << "Polygon is not valid\n";
-			for (const glm::vec2& v : polygon.vertices)
-			{
-				std::cout << v.x << " " << v.y << "\n";
-			}
-		}
+
 
 
 
@@ -558,29 +602,12 @@ namespace game
 
 
 
-
-
-		//// testing
-		//m_renderer->SetRenderTarget();
-		//m_renderer->shader.Use();
-		//m_renderer->BeginFrame();
-		//m_renderer->SetCamera(UICamera);
-		//m_renderer->DrawRect({ 0, 0, LittleEngine::GetWindowSize().x, LittleEngine::GetWindowSize().y }, lightFBO.GetTexture());
-
-		//m_renderer->Flush();
-		//m_renderer->SetCamera(sceneCamera);
-
-		//fullscreenImageBlitShader.Use();
-		//fullscreenImageBlitShader.SetInt("uTexture", 0);
-		//lightFBO.GetTexture().Bind(0);
-		//m_renderer->FlushFullscreenQuad();
-
-
-
-
-
-
 		m_renderer->shader.Use();
+
+
+		// render UI;
+
+		m_uiSystem->Render(m_renderer.get());
 
 #pragma endregion
 
@@ -591,7 +618,7 @@ namespace game
  		float fps = 1.f / delta;
 		// Your ImGui widgets here
 		ImGui::Begin("Debug");
-		ImGui::Text("FPS: %.2f", fps);
+		ImGui::Text("FPS: %.2f", LittleEngine::GetFPS());
 		ImGui::Text("QuadCount: %d", m_renderer->GetQuadCount());
 		ImGui::Text("camera pos: %.1f, %.1f", sceneCamera.position.x, sceneCamera.position.y);
 		ImGui::SliderFloat("Camera Zoom", &m_data.zoom, 0.1f, 100.f);
@@ -667,7 +694,7 @@ namespace game
 		{
 			fpsHistory.erase(fpsHistory.begin());
 		}
-		fpsHistory.push_back(fps);
+		fpsHistory.push_back(LittleEngine::GetFPS());
 
 		float maxfps = 0;
 		for (float f : fpsHistory)
@@ -718,13 +745,16 @@ namespace game
 	void Game::OnWindowSizeChange(int w, int h)
 	{
 		m_renderer->UpdateWindowSize(w, h);
+		m_uiSystem->UpdateWindowSize(w, h);
+		
+		LittleEngine::Input::UpdateWindowSize(w, h);
 
 		// update the camera
-		sceneCamera.viewportSize = glm::vec2(w, h);
-		UICamera.viewportSize = glm::vec2(w, h);
+		sceneCamera.viewportSize = glm::ivec2(w, h);
 
 		ResizeFBOs();
 	}
+
 
 #pragma endregion
 

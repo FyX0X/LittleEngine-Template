@@ -32,6 +32,14 @@ namespace game
 
 	private:
 
+		void InitializeEngine();
+		void InitializeResources();
+		void InitializeInput();
+		void InitializeUI();
+		void InitializeScene();
+		void InitializeLight();
+
+
 
 		void ResizeFBOs();
 
@@ -46,7 +54,7 @@ namespace game
 		GameData m_data;
 		std::unique_ptr<LittleEngine::Graphics::Renderer> m_renderer;
 		std::unique_ptr<LittleEngine::Audio::AudioSystem> m_audioSystem;
-
+		std::unique_ptr<LittleEngine::UI::UISystem> m_uiSystem; // UI system for handling UI elements and contexts
 		std::unique_ptr<LittleEngine::Graphics::LightSystem> m_lightSystem; // light system for rendering lights and shadows
 
 		// temporary
@@ -112,11 +120,10 @@ namespace game
 		LittleEngine::Graphics::RenderTarget lightFBO = {};
 
 		LittleEngine::Graphics::Camera sceneCamera = {};
-		LittleEngine::Graphics::Camera UICamera = {};
 
 
 		LittleEngine::Graphics::Shader blurShader = {};
-		LittleEngine::Graphics::Shader lightSceneMergingShader = {};
+		//LittleEngine::Graphics::Shader lightSceneMergingShader = {};
 
 		//LittleEngine::Graphics::Shader lightShader = {};
 		//LittleEngine::Graphics::Shader shadowShader = {};
@@ -127,6 +134,8 @@ namespace game
 
 		bool enableShadows = true;
 
+
+		LittleEngine::UI::UICheckbox* cb_ptr = nullptr;
 
 	};
 
