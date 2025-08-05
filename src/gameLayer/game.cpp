@@ -15,7 +15,9 @@
 
 //#include <LittleEngine/error_logger.h>
 
-
+// Temporary includes for glad and GLFW for keys
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 
 #include <iostream>
@@ -678,7 +680,7 @@ namespace game
 
 		if (ImGui::Checkbox("wireframe", &w))
 		{
-			LittleEngine::SetWireframe(w);
+			m_renderer->SetWireframe(w);
 		}
 		if (ImGui::Checkbox("vsinc", &v))
 		{

@@ -12,7 +12,7 @@ namespace game
 
 	public:
 		Game() {};
-		~Game() = default;
+		~Game() { Shutdown(); };
 
 		Game(Game& other) = delete;
 		Game(Game&& other) = delete;

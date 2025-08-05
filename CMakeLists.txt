@@ -13,9 +13,19 @@ set(PRODUCTION_BUILD OFF CACHE BOOL "Make this a production build" FORCE)
 #delete the out folder after changing if visual studio doesn recognize the change!
 
 
+# -----------------
+# Select the implementation
+set(PLATFORM USE_GLFW=1) 
+#set(PLATFORM USE_SDL=1) exemple (not actually in library)
+# -----------------
+
+
+
+if(PRODUCTION_BUILD)
+else()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
+endif()
 
 #may give problems on linux
 if(PRODUCTION_BUILD)
@@ -42,6 +52,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 
 add_subdirectory(thirdparty/LittleEngine)
+#add_subdirectory(thirdparty/nlohmann_json)
 
 
 # MY_SOURCES is defined to be a list of all the source files for my game 
@@ -61,7 +72,9 @@ if(PRODUCTION_BUILD)
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="./resources/") 
 	# remove the option to debug asserts.
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=1) 
+	target_compile_definitions(LittleEngine PUBLIC PRODUCTION_BUILD=1) 
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC DEVELOPMENT_BUILD=0) 
+	target_compile_definitions(LittleEngine PUBLIC DEVELOPMENT_BUILD=0) 
 	
 	# disable IMGUI
 	set(IMGUI_FLAG ENABLE_IMGUI=0)
@@ -70,7 +83,10 @@ else()
 	# This is useful to get an ASSETS_PATH in your IDE during development
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/resources/")
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=0) 
+	target_compile_definitions(LittleEngine PUBLIC PRODUCTION_BUILD=0) 
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC DEVELOPMENT_BUILD=1) 
+	target_compile_definitions(LittleEngine PUBLIC DEVELOPMENT_BUILD=1) 
+ 
 
 	
 	# enable IMGUI
@@ -88,15 +104,21 @@ endif()
 target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC ${IMGUI_FLAG})
 target_compile_definitions(LittleEngine PUBLIC ${IMGUI_FLAG})
 
+# set the platform to use GLFW or other...
+target_compile_definitions(LittleEngine PUBLIC ${PLATFORM})
+
+
+
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES}  "src/main.cpp")
 
 
 if(MSVC) # If using the VS compiler...
 
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC _CRT_SECURE_NO_WARNINGS)
-
-	# set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup") #no console
 	
+if(PRODUCTION_BUILD)
+	set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup") #no console
+	endif()
 	#set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebug<$<CONFIG:Debug>:Debug>")
 	#set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
 
@@ -110,7 +132,6 @@ endif()
 
 target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
 target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/gameLayer/")
-target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/platform/")
 
 
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE LittleEngine)
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE LittleEngine)# nlohmann_json)
