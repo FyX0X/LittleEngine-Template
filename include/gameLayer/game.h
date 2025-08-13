@@ -60,10 +60,10 @@ namespace game
 		// temporary
 
 		bool outlineMode = false;
-		LittleEngine::Polygon polygon = {};
+		LittleEngine::Math::Polygon polygon = {};
 
 
-		std::vector<LittleEngine::Polygon*> obstacles;
+		std::vector<LittleEngine::Math::Polygon*> obstacles;
 		std::vector<LittleEngine::Graphics::LightSource*> lightSources;
 
 		LittleEngine::Audio::Sound sound;

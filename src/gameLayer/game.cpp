@@ -13,7 +13,7 @@
 
 #include <LittleEngine/little_engine.h>
 
-//#include <LittleEngine/error_logger.h>
+#include <LittleEngine/Utils/logger.h>
 
 // Temporary includes for glad and GLFW for keys
 #include <glad/glad.h>
@@ -54,25 +54,28 @@ namespace game
 
 
 		// TESTING
-		std::cout << "test\n";
+		LittleEngine::Utils::Logger::Info("info");
+		LittleEngine::Utils::Logger::Warning("warning");
+		LittleEngine::Utils::Logger::Error("error");
+		//LittleEngine::Utils::Logger::Critical("critical");
 
 		glm::vec2 a = { 0, 0 };
 		glm::vec2 b = { 1, 0 };
 		glm::vec2 c = { 2, 0 };
 
-		LittleEngine::Edge e1 = { a, c };
+		LittleEngine::Math::Edge e1 = { a, c };
 
-		LittleEngine::Edge e2 = { b, c };
+		LittleEngine::Math::Edge e2 = { b, c };
 
 		// triangle in CCW order
 
-		std::cout << "Triangle signed area: " << LittleEngine::TriangleSignedArea(a, b, c) << "\n";
-		std::cout << "Three point orientation: " << LittleEngine::ThreePointOrientation(a, b, c) << "\n";
+		std::cout << "Triangle signed area: " << LittleEngine::Math::TriangleSignedArea(a, b, c) << "\n";
+		std::cout << "Three point orientation: " << LittleEngine::Math::ThreePointOrientation(a, b, c) << "\n";
 
-		std::cout << "b on AC: " << LittleEngine::PointOnSegment(b, e1) << "\n";
-		std::cout << "a on BC: " << LittleEngine::PointOnSegment(a, e2) << "\n";
-		std::cout << "c on AC: " << LittleEngine::PointOnSegment(c, e1) << "\n";
-		std::cout << "(1, 0.1) on AC: " << LittleEngine::PointOnSegment({ 1, 0.1f }, e1) << "\n";
+		std::cout << "b on AC: " << LittleEngine::Math::PointOnSegment(b, e1) << "\n";
+		std::cout << "a on BC: " << LittleEngine::Math::PointOnSegment(a, e2) << "\n";
+		std::cout << "c on AC: " << LittleEngine::Math::PointOnSegment(c, e1) << "\n";
+		std::cout << "(1, 0.1) on AC: " << LittleEngine::Math::PointOnSegment({ 1, 0.1f }, e1) << "\n";
 
 
 		//loading the saved data. Loading an entire structure like this makes savind game data very easy.
@@ -262,10 +265,10 @@ namespace game
 		};
 
 		class AddPointCommand : public LittleEngine::Input::Command {
-			LittleEngine::Polygon& poly;
+			LittleEngine::Math::Polygon& poly;
 			const LittleEngine::Graphics::Camera& camera;
 		public:
-			AddPointCommand(LittleEngine::Polygon& p, LittleEngine::Graphics::Camera& c) : poly(p), camera(c) {}
+			AddPointCommand(LittleEngine::Math::Polygon& p, LittleEngine::Graphics::Camera& c) : poly(p), camera(c) {}
 			std::string GetName() const override { return "AddPoint"; }
 			void OnPress() override {
 				// add point to polygon at mouse position
@@ -284,9 +287,9 @@ namespace game
 		};
 
 		class ResetPolygonCommand : public LittleEngine::Input::Command {
-			LittleEngine::Polygon& poly;
+			LittleEngine::Math::Polygon& poly;
 		public:
-			ResetPolygonCommand(LittleEngine::Polygon& p) : poly(p) {}
+			ResetPolygonCommand(LittleEngine::Math::Polygon& p) : poly(p) {}
 			std::string GetName() const override { return "ResetPolygon"; }
 			void OnPress() override {
 				poly.vertices.clear();
@@ -555,11 +558,11 @@ namespace game
 		m_renderer->DrawRect(glm::vec4(m_data.pos2, 3.f, 3.f), target.GetTexture());
 
 
-		LittleEngine::Edge e1 = { m_data.A, m_data.B };
-		LittleEngine::Edge e2 = { m_data.C, m_data.D };
+		LittleEngine::Math::Edge e1 = { m_data.A, m_data.B };
+		LittleEngine::Math::Edge e2 = { m_data.C, m_data.D };
 
 		LittleEngine::Graphics::Color c;
-		if (LittleEngine::SegmentsIntersect(e1, e2))
+		if (LittleEngine::Math::SegmentsIntersect(e1, e2))
 		{
 			c = LittleEngine::Graphics::Colors::Green;
 		}
