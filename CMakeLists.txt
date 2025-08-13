@@ -1,96 +1,48 @@
-# Based on:
-#https://github.com/meemknight/cmakeSetup
-
 cmake_minimum_required(VERSION 3.16)
+project(TestSeparation)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#! ! ! ! ! ! !
-#set this to true to ship the game!
-#basically this will change the RESOURCES_PATH to be the local path
-#! ! ! ! ! ! !
+# Add engine as a library
+add_subdirectory(LittleEngine)
+
+# Add game as an executable that links to engine
+add_subdirectory(game)
+
+
+# -----------------
+# Build options
 set(PRODUCTION_BUILD OFF CACHE BOOL "Make this a production build" FORCE)
-#delete the out folder after changing if visual studio doesn recognize the change!
-
-
-# -----------------
-# Select the implementation
-set(PLATFORM USE_GLFW=1) 
-#set(PLATFORM USE_SDL=1) exemple (not actually in library)
+set(PLATFORM "GLFW" CACHE STRING "Choose platform: GLFW or SDL" FORCE)
 # -----------------
 
 
 
-if(PRODUCTION_BUILD)
-else()
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
-
-#may give problems on linux
-if(PRODUCTION_BUILD)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE) #link time optimization
-else()
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
-endif()
-
-
-
-if(MSVC) 
-add_compile_options(/arch:AVX2) #make sure SIMD optimizations take place
-endif()
-
-project(LittleEngineTemplate)
-
-
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-
-
-
-add_subdirectory(thirdparty/LittleEngine)
-#add_subdirectory(thirdparty/nlohmann_json)
-
-
-# MY_SOURCES is defined to be a list of all the source files for my game 
-# DON'T ADD THE SOURCES BY HAND, they are already added with this macro
-file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
-
-
-add_executable("${CMAKE_PROJECT_NAME}")
-
-set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
-
-
-target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC GLFW_INCLUDE_NONE=1) 
 
 if(PRODUCTION_BUILD)
 	# setup the ASSETS_PATH macro to be in the root folder of your exe
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="./resources/") 
+	target_compile_definitions(game PUBLIC RESOURCES_PATH="./resources/") 
 	# remove the option to debug asserts.
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=1) 
-	target_compile_definitions(LittleEngine PUBLIC PRODUCTION_BUILD=1) 
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC DEVELOPMENT_BUILD=0) 
-	target_compile_definitions(LittleEngine PUBLIC DEVELOPMENT_BUILD=0) 
+	target_compile_definitions(game PUBLIC PRODUCTION_BUILD) 
+	target_compile_definitions(LittleEngine PUBLIC PRODUCTION_BUILD)
+
 	
-	# disable IMGUI
-	set(IMGUI_FLAG ENABLE_IMGUI=0)
+	#may give problems on linux
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 else()
 	# This is useful to get an ASSETS_PATH in your IDE during development
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/resources/")
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=0) 
-	target_compile_definitions(LittleEngine PUBLIC PRODUCTION_BUILD=0) 
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC DEVELOPMENT_BUILD=1) 
-	target_compile_definitions(LittleEngine PUBLIC DEVELOPMENT_BUILD=1) 
+	target_compile_definitions(game PUBLIC RESOURCES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/game/resources/")
+	target_compile_definitions(game PUBLIC DEVELOPMENT_BUILD) 
+	target_compile_definitions(LittleEngine PUBLIC DEVELOPMENT_BUILD) 
  
+	# enable IMGUI
+	target_compile_definitions(game PUBLIC ENABLE_IMGUI)
+	target_compile_definitions(LittleEngine PUBLIC ENABLE_IMGUI)
 
 	
-	# enable IMGUI
-	set(IMGUI_FLAG ENABLE_IMGUI=1)
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
 
 	# does not work with nija i think
 	## For MSVC compiler only
@@ -101,37 +53,26 @@ else()
 
 endif()
 
-target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC ${IMGUI_FLAG})
-target_compile_definitions(LittleEngine PUBLIC ${IMGUI_FLAG})
-
-# set the platform to use GLFW or other...
-target_compile_definitions(LittleEngine PUBLIC ${PLATFORM})
-
-
-
-target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES}  "src/main.cpp")
 
 
 if(MSVC) # If using the VS compiler...
 
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC _CRT_SECURE_NO_WARNINGS)
+	target_compile_definitions(game PUBLIC _CRT_SECURE_NO_WARNINGS)
+
+	
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<CONFIG:Release>:Release>")
+
+
+	add_compile_options(/arch:AVX2) #make sure SIMD optimizations take place
 	
 if(PRODUCTION_BUILD)
-	set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup") #no console
+	set_target_properties(game PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup") #no console
 	endif()
-	#set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDebug<$<CONFIG:Debug>:Debug>")
-	#set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
-
 endif()
 
 #force remove unicode
 if (WIN32)
-	target_compile_options("${CMAKE_PROJECT_NAME}" PRIVATE /UUNICODE /U_UNICODE)
+	target_compile_options(game PRIVATE /UUNICODE /U_UNICODE)
 endif()
 
 
-target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
-target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/gameLayer/")
-
-
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE LittleEngine)# nlohmann_json)
