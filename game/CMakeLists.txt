@@ -1,6 +1,6 @@
 # Declare your game executable target
 add_executable(game)
-set_target_properties(game PROPERTIES OUTPUT_NAME "AwesomeGame")
+set_target_properties(game PROPERTIES OUTPUT_NAME "${CMAKE_PROJECT_NAME}")
 
 
 
