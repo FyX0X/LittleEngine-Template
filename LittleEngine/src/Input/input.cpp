@@ -6,14 +6,25 @@
 
 
 #include <glad/glad.h>
+
+#ifdef USE_GLFW
+
 #include <GLFW/glfw3.h>
+#endif // USE_GLFW
+
+
 
 
 #if ENABLE_IMGUI == 1
 #include <imgui.h>
+
+#ifdef USE_GLFW
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
-
+#elif defined(USE_SDL)
+#include <backends/imgui_impl_sdl3.h>
+#include <backends/imgui_impl_opengl3.h>
+#endif // USE_GLFW
 #endif // 
 
 
@@ -22,6 +33,8 @@
 #include <memory>
 #include <array>
 
+#define GLFW_KEY_LAST 348
+#define GLFW_MOUSE_BUTTON_LAST 7
 
 constexpr int MaxKeyCode = GLFW_KEY_LAST;
 constexpr int MaxMouseButton = GLFW_MOUSE_BUTTON_LAST;
@@ -63,12 +76,15 @@ namespace LittleEngine::Input
 
 	void Initialize(GLFWwindow* window, const glm::ivec2& windowSize)
 	{
+#ifdef USE_GLFW
 
 		glfwSetKeyCallback(window, key_callback);
 		glfwSetMouseButtonCallback(window, mouse_button_callback);
 		glfwSetCursorPosCallback(window, cursor_position_callback);
 		glfwSetScrollCallback(window, scroll_callback);
 		glfwSetWindowFocusCallback(window, focus_callback);
+#endif // USE_GLFW
+
 
 
 		ResetKeyState();	// just to be sure.
@@ -380,10 +396,12 @@ namespace LittleEngine::Input
 #pragma endregion
 
 #pragma region Callbacks
+#ifdef USE_GLFW
+
 
 	void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	{
-#if ENABLE_IMGUI == 1
+#if ENABLE_IMGUI == 1 && defined(USE_GLFW)
 		// callback for imgui
 		ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
 
@@ -394,7 +412,7 @@ namespace LittleEngine::Input
 
 	void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 	{
-#if ENABLE_IMGUI == 1
+#if ENABLE_IMGUI == 1 && defined(USE_GLFW)
 		// callback for imgui
 		ImGui_ImplGlfw_CursorPosCallback(window, xpos, ypos);
 
@@ -408,7 +426,7 @@ namespace LittleEngine::Input
 
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	{
-#if ENABLE_IMGUI == 1
+#if ENABLE_IMGUI == 1 && defined(USE_GLFW)
 		// callback for imgui
 		ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);  // Forward to ImGui
 
@@ -423,7 +441,7 @@ namespace LittleEngine::Input
 
 	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
-#if ENABLE_IMGUI == 1
+#if ENABLE_IMGUI == 1 && defined(USE_GLFW)
 		// callback for imgui
 		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);  // Forward to ImGui
 
@@ -445,6 +463,7 @@ namespace LittleEngine::Input
 		}
 	}
 
+#endif // USE_GLFW
 #pragma endregion
 
 }

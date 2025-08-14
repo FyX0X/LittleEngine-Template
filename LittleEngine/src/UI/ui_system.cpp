@@ -3,11 +3,16 @@
 #include "LittleEngine/UI/ui_context.h"
 #include "LittleEngine/Utils/logger.h"
 
+#ifdef USE_GLFW
+
 
 // Temporary includes for glad and GLFW
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#else
+#define GLFW_MOUSE_BUTTON_LEFT 0 // Define GLFW_MOUSE_BUTTON_LEFT if not defined
 
+#endif // USE_GLFW
 
 namespace LittleEngine::UI
 {	

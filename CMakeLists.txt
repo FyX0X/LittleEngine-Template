@@ -4,6 +4,14 @@ project(TemplateGame)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
+
+# -----------------
+# Build options
+set(PRODUCTION_BUILD OFF CACHE BOOL "Make this a production build" FORCE)
+set(PLATFORM "SDL" CACHE STRING "Choose platform: GLFW or SDL" FORCE)
+# -----------------
+
 # Add engine as a library
 add_subdirectory(LittleEngine)
 
@@ -11,11 +19,6 @@ add_subdirectory(LittleEngine)
 add_subdirectory(game)
 
 
-# -----------------
-# Build options
-set(PRODUCTION_BUILD OFF CACHE BOOL "Make this a production build" FORCE)
-set(PLATFORM "GLFW" CACHE STRING "Choose platform: GLFW or SDL" FORCE)
-# -----------------
 
 
 
