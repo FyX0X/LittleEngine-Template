@@ -1,5 +1,6 @@
-#define GLM_ENABLE_EXPERIMENTAL
 #include "game.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -8,17 +9,16 @@
 #include "imgui.h"
 #endif
 
-#include <iostream>
-#include <sstream>
-
 #include <LittleEngine/little_engine.h>
 
 #include <LittleEngine/Utils/logger.h>
 
 // Temporary includes for glad and GLFW for keys
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
+#ifdef USE_GLFW
+#include <GLFW/glfw3.h>
+#endif // USE_GLFW
 
 #include <iostream>
 #include <iomanip>
