@@ -132,22 +132,22 @@ namespace game
 		LittleEngine::Input::RegisterAxis("horizontal");
 
 		// Primary keys for each axis
-		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_W, GLFW_KEY_S, "vertical");
-		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_D, GLFW_KEY_A, "horizontal");
+		LittleEngine::Input::BindKeysToAxis(LittleEngine::Input::KeyCode::W, LittleEngine::Input::KeyCode::S, "vertical");
+		LittleEngine::Input::BindKeysToAxis(LittleEngine::Input::KeyCode::D, LittleEngine::Input::KeyCode::A, "horizontal");
 
 		// Duplicate (secondary) keys for each axis
 		LittleEngine::Input::RegisterAxis("vertical_alt");
 		LittleEngine::Input::RegisterAxis("horizontal_alt");
 
-		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_UP, GLFW_KEY_DOWN, "vertical_alt");
-		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_RIGHT, GLFW_KEY_LEFT, "horizontal_alt");
+		LittleEngine::Input::BindKeysToAxis(LittleEngine::Input::KeyCode::Up, LittleEngine::Input::KeyCode::Down, "vertical_alt");
+		LittleEngine::Input::BindKeysToAxis(LittleEngine::Input::KeyCode::Right, LittleEngine::Input::KeyCode::Left, "horizontal_alt");
 
 		// Duplicate (third) keys for each axis
 		LittleEngine::Input::RegisterAxis("vertical3");
 		LittleEngine::Input::RegisterAxis("horizontal3");
 
-		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_I, GLFW_KEY_K, "vertical3");
-		LittleEngine::Input::BindKeysToAxis(GLFW_KEY_L, GLFW_KEY_J, "horizontal3");
+		LittleEngine::Input::BindKeysToAxis(LittleEngine::Input::KeyCode::I, LittleEngine::Input::KeyCode::K, "vertical3");
+		LittleEngine::Input::BindKeysToAxis(LittleEngine::Input::KeyCode::L, LittleEngine::Input::KeyCode::J, "horizontal3");
 
 
 #pragma region Command definitions
@@ -299,21 +299,21 @@ namespace game
 #pragma endregion
 
 
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_U, std::make_unique<UpdatePointPosCommand>(m_data.A, sceneCamera));
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_I, std::make_unique<UpdatePointPosCommand>(m_data.B, sceneCamera));
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_O, std::make_unique<UpdatePointPosCommand>(m_data.C, sceneCamera));
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_P, std::make_unique<UpdatePointPosCommand>(m_data.D, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::U, std::make_unique<UpdatePointPosCommand>(m_data.A, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::I, std::make_unique<UpdatePointPosCommand>(m_data.B, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::O, std::make_unique<UpdatePointPosCommand>(m_data.C, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::P, std::make_unique<UpdatePointPosCommand>(m_data.D, sceneCamera));
 
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_T, std::make_unique<AddPointCommand>(polygon, sceneCamera));
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_R, std::make_unique<ResetPolygonCommand>(polygon));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::T, std::make_unique<AddPointCommand>(polygon, sceneCamera));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::R, std::make_unique<ResetPolygonCommand>(polygon));
 
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<ColorCommand>(m_data.color));
-		//LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<JumpCommand>(m_data.rectPos));
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_SPACE, std::make_unique<SoundCommand>(sound));
-		LittleEngine::Input::BindMouseButtonToCommand(GLFW_MOUSE_BUTTON_LEFT, std::make_unique<ColorCommand>(m_data.color));
-		LittleEngine::Input::BindMouseButtonToCommand(GLFW_MOUSE_BUTTON_RIGHT, std::make_unique<ZoomCommand>(m_data.zoom));
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_F11, std::make_unique<ScreenshotCommand>(m_renderer.get()));
-		LittleEngine::Input::BindKeyToCommand(GLFW_KEY_F10, std::make_unique<SaveRenderTargetCommand>(m_renderer.get(), target));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::Space, std::make_unique<ColorCommand>(m_data.color));
+		//LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::SPACE, std::make_unique<JumpCommand>(m_data.rectPos));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::Space, std::make_unique<SoundCommand>(sound));
+		LittleEngine::Input::BindMouseButtonToCommand(LittleEngine::Input::MouseButton::Left, std::make_unique<ColorCommand>(m_data.color));
+		LittleEngine::Input::BindMouseButtonToCommand(LittleEngine::Input::MouseButton::Left, std::make_unique<ZoomCommand>(m_data.zoom));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::F11, std::make_unique<ScreenshotCommand>(m_renderer.get()));
+		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::F10, std::make_unique<SaveRenderTargetCommand>(m_renderer.get(), target));
 
 	}
 

@@ -24,7 +24,7 @@ namespace LittleEngine::Platform
         if (!s_initialized) {
             s_initialized = (glfwInit() == GLFW_TRUE);
             if (!s_initialized) {
-                Utils::Logger::Critical("Failed to initialize GLFW: " + std::string(glfwGetError(nullptr)));
+                Utils::Logger::Critical("Failed to initialize GLFW: " + std::to_string(glfwGetError(nullptr)));
                 return false;
 			}
             Utils::Logger::Info("GLFW Platform initialized successfully.");
@@ -64,7 +64,7 @@ namespace LittleEngine::Platform
         // Setup Dear ImGui style
         ImGui::StyleColorsDark();
         // Setup Platform/Renderer backends
-        ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(window->GetNativeWindowHandle()), true);
+        ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(window->GetNativeWindowHandle()), false);
         ImGui_ImplOpenGL3_Init("#version 330 core");
 	}
 

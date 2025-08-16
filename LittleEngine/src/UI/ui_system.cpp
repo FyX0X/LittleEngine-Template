@@ -31,7 +31,7 @@ namespace LittleEngine::UI
 	void UISystem::Update()
 	{
 		glm::vec2 mousePos = Input::GetMousePosition();
-		bool mousePressed = Input::IsMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
+		bool mousePressed = Input::IsMouseButtonPressed(Input::MouseButton::Left);
 
 		for (auto& [name, context] : m_contexts)
 		{
