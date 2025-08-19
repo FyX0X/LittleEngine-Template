@@ -160,7 +160,7 @@ namespace LittleEngine::Platform::GlfwUtils
 	Input::MouseButton MouseButtonFromGlfw(int button)
 	{
 		if (button < 0 || button > GLFW_MOUSE_BUTTON_8)
-			return Input::MouseButton::Unkown; // Invalid button
+			return Input::MouseButton::Unknown; // Invalid button
 
 		return static_cast<Input::MouseButton>(button - GLFW_MOUSE_BUTTON_1 + static_cast<int>(Input::MouseButton::Button0));
 	}	

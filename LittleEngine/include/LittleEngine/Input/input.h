@@ -148,7 +148,7 @@ namespace LittleEngine::Input
 
 	enum class MouseButton : uint8_t
 	{
-		Unkown = 0,	// Used for unrecognized mouse buttons.
+		Unknown = 0,	// Used for unrecognized mouse buttons.
 
 		Button0,
 		Button1,

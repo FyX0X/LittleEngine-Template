@@ -52,9 +52,6 @@ namespace LittleEngine::Platform
 
 	private:
 
-		void InitializeCallbacks();
-
-
 		SDL_Window* m_window = nullptr; // GLFW window handle
 		WindowState m_state = {};
 		void* m_glContext = nullptr;

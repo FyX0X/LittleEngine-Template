@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ----------------- TODO: move this to configuration in CMakeSettings.json
 # Build options
 set(PRODUCTION_BUILD OFF CACHE BOOL "Make this a production build" FORCE)
-set(PLATFORM "GLFW" CACHE STRING "Choose platform: GLFW or SDL" FORCE)
+set(PLATFORM "SDL" CACHE STRING "Choose platform: GLFW or SDL" FORCE)
 # -----------------
 
 # Add engine as a library

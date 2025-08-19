@@ -23,7 +23,8 @@ namespace LittleEngine::Platform
     bool SdlPlatform::Initialize()
     {
         if (!s_initialized) {
-            s_initialized = (SDL_Init(SDL_INIT_VIDEO) == 0);
+            SDL_ClearError();
+            s_initialized = SDL_Init(SDL_INIT_VIDEO);
             if (!s_initialized) {
                 Utils::Logger::Critical(std::string("Failed to initialize SDL: ") + SDL_GetError());
                 return false;

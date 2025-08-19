@@ -7,7 +7,14 @@
 
 #include "LittleEngine/Utils/logger.h"
 #include "LittleEngine/Utils/debug_tools.h"
+#include "LittleEngine/Platform/SDL/sdl_utils.h"
 
+
+#if ENABLE_IMGUI == 1
+#include <imgui.h>
+#include <backends/imgui_impl_sdl3.h>
+#include <backends/imgui_impl_opengl3.h>
+#endif
 
 
 namespace LittleEngine::Platform
@@ -100,11 +107,6 @@ namespace LittleEngine::Platform
 		//}
 
 
-
-		// Initialize callbacks
-		InitializeCallbacks();
-
-
 		if (!config.iconPath.empty())
 		{
 			SetIcon(config.iconPath);
@@ -142,11 +144,102 @@ namespace LittleEngine::Platform
 		// TODO CHANGE THIS BCS EVENTS
 		// Poll for and process events
 		SDL_Event event;
+		Input::MouseButton mb;
+		Input::KeyCode key;
 		while (SDL_PollEvent(&event)) {
 			// Handle events here if needed, e.g., window close, input, etc.
-			if (event.type == SDL_EVENT_QUIT) {
-				m_shouldClose = true; // You can define a flag to track window close
+			// forward events to ImGui
+			ImGui_ImplSDL3_ProcessEvent(&event);
+
+			// Handle SDL events
+			switch (event.type)
+			{
+				case SDL_EVENT_QUIT:
+					if (m_state.windowCloseCallback) {
+						m_state.windowCloseCallback();
+					}
+					m_shouldClose = true; // Set the close flag
+					break;
+				case SDL_EVENT_WINDOW_RESIZED:
+					if (m_state.windowResizeCallback) {
+						m_state.windowResizeCallback(event.window.data1, event.window.data2);
+					}
+					m_state.width = event.window.data1;
+					m_state.height = event.window.data2;
+					break;
+				case SDL_EVENT_WINDOW_FOCUS_GAINED:
+					if (m_state.windowFocusCallback) {
+						m_state.windowFocusCallback(true);
+					}
+					// forward to input
+					Input::focus_callback(true);
+					break;
+				case SDL_EVENT_WINDOW_FOCUS_LOST:
+					if (m_state.windowFocusCallback) {
+						m_state.windowFocusCallback(false);
+					}
+					// forward to input
+					Input::focus_callback(false);
+					break;
+				case SDL_EVENT_MOUSE_MOTION:
+					if (m_state.mouseMoveCallback) {
+						m_state.mouseMoveCallback(static_cast<float>(event.motion.x), static_cast<float>(event.motion.y));
+					}
+					// forward to input
+					Input::cursor_position_callback(static_cast<float>(event.motion.x), static_cast<float>(event.motion.y));
+					break;
+				case SDL_EVENT_MOUSE_WHEEL:
+					if (m_state.mouseScrollCallback) {
+						m_state.mouseScrollCallback(static_cast<float>(event.wheel.x), static_cast<float>(event.wheel.y));
+					}
+					// forward to input
+					Input::scroll_callback(static_cast<float>(event.wheel.x), static_cast<float>(event.wheel.y));
+					break;
+				case SDL_EVENT_MOUSE_BUTTON_DOWN:
+					mb = SdlUtils::MouseButtonFromSdl(event.button.button);
+					if (m_state.mouseButtonCallback) {
+						m_state.mouseButtonCallback(mb, Input::InputEventType::Pressed);
+					}
+					// forward to input
+					Input::mouse_button_callback(mb, Input::InputEventType::Pressed);
+					break;
+				case SDL_EVENT_MOUSE_BUTTON_UP:
+					mb = SdlUtils::MouseButtonFromSdl(event.button.button);
+					if (m_state.mouseButtonCallback) {
+						m_state.mouseButtonCallback(mb, Input::InputEventType::Released);
+					}
+					// forward to input
+					Input::mouse_button_callback(mb, Input::InputEventType::Released);
+					break;
+				case SDL_EVENT_KEY_DOWN:
+					key = SdlUtils::KeyFromSdl(event.key.key);
+					if (m_state.keyCallback) {
+						m_state.keyCallback(key, Input::InputEventType::Pressed);
+					}
+					// forward to input
+					Input::key_callback(key, Input::InputEventType::Pressed);
+					break;
+				case SDL_EVENT_KEY_UP:
+					key = SdlUtils::KeyFromSdl(event.key.key);
+					if (m_state.keyCallback) {
+						m_state.keyCallback(key, Input::InputEventType::Released);
+					}
+					// forward to input
+					Input::key_callback(key, Input::InputEventType::Released);
+					break;
+				case SDL_EVENT_TEXT_INPUT:
+					if (m_state.charCallback) {
+						for (const char* p = event.text.text; *p; ++p) {
+							m_state.charCallback(static_cast<unsigned int>(*p));
+						}
+					}
+					// forward to input
+					// add functionality to Input::char_callback TODO
+					break;
+				default: 					// Handle other events if needed
+					break;
 			}
+
 		}
 		// Swap front and back buffers
 		SDL_GL_SwapWindow(m_window);
@@ -267,11 +360,6 @@ namespace LittleEngine::Platform
 	}
 
 
-	void SdlWindow::InitializeCallbacks()
-	{
-
-
-	}
 #pragma endregion
 
 }
