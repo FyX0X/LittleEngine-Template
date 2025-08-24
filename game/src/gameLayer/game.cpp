@@ -311,7 +311,7 @@ namespace game
 		//LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::SPACE, std::make_unique<JumpCommand>(m_data.rectPos));
 		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::Space, std::make_unique<SoundCommand>(sound));
 		LittleEngine::Input::BindMouseButtonToCommand(LittleEngine::Input::MouseButton::Left, std::make_unique<ColorCommand>(m_data.color));
-		LittleEngine::Input::BindMouseButtonToCommand(LittleEngine::Input::MouseButton::Left, std::make_unique<ZoomCommand>(m_data.zoom));
+		//LittleEngine::Input::BindMouseButtonToCommand(LittleEngine::Input::MouseButton::Left, std::make_unique<ZoomCommand>(m_data.zoom));
 		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::F11, std::make_unique<ScreenshotCommand>(m_renderer.get()));
 		LittleEngine::Input::BindKeyToCommand(LittleEngine::Input::KeyCode::F10, std::make_unique<SaveRenderTargetCommand>(m_renderer.get(), target));
 
@@ -542,16 +542,17 @@ namespace game
 			//m_renderer->DrawRect(rect[i], textures[i], color);
 		}
 
-		m_renderer->DrawString("Some Text. ) ! 123", { -9.97, 4.97 }, font, LittleEngine::Graphics::Colors::Gray, scale);
-		m_renderer->DrawString("Some Text. ) ! 123", { -10, 5 }, font, LittleEngine::Graphics::Colors::White, scale);
-
-		m_renderer->DrawString("Hello Arial", { 0, 0 }, font, LittleEngine::Graphics::Colors::White, scale);
-		m_renderer->DrawString("Hello Default", { 0, -3 }, LittleEngine::Graphics::Colors::White, scale);
-
 		for (size_t i = 0; i < length; i++)
 		{
 			tilemap.Draw(m_renderer.get());		// each call draws the whole timeMap, only for benchmark purposes
 		}
+
+		m_renderer->DrawString("LittleEngine Template", { -.97, 4.97 }, font, LittleEngine::Graphics::Colors::Gray, scale);
+		m_renderer->DrawString("LittleEngine Template", { -1, 5 }, font, LittleEngine::Graphics::Colors::White, scale);
+
+		m_renderer->DrawString("Hello Arial", { 0, 0 }, font, LittleEngine::Graphics::Colors::White, scale);
+		m_renderer->DrawString("Hello Default font", { 0, -3 }, LittleEngine::Graphics::Colors::White, scale);
+
 
 
 

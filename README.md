@@ -1,6 +1,9 @@
 # LittleEngine Template
 
-This repository is a **starter project** for building your own game using [LittleEngine](https://github.com/yourname/LittleEngine).  
+
+![Demo Screenshot](docs/example.png)
+
+This repository is a **starter project** for building your own game using [LittleEngine](https://github.com/fyx0x/LittleEngine).  
 It comes pre-configured with a working build system, entry point, and asset structure.
 
 ---
@@ -9,7 +12,7 @@ It comes pre-configured with a working build system, entry point, and asset stru
 
 1. **Clone this repo** (or use it as a GitHub template):
    ```bash
-   git clone https://github.com/yourname/LittleEngine-Template.git MyGame
+   git clone https://github.com/fyx0x/LittleEngine-Template.git MyGame
    cd MyGame
    ```
 
@@ -19,8 +22,9 @@ It comes pre-configured with a working build system, entry point, and asset stru
    ```
 
 3. **Configure & build** (choose backend: `GLFW` or `SDL`):
+   select a backend in the CMakeLists.txt : PLATFORM=GLFW or SDL
+   set PRODUCTION_BUILD to ON if release build to disable ImGui and enable optimizations.
    ```bash
-   cmake -S . -B build -DPLATFORM=GLFW -DCMAKE_BUILD_TYPE=Release
    cmake --build build -j
    ```
 
@@ -59,9 +63,8 @@ CMakeLists.txt    # Project build script (links against LittleEngine)
 
 Add screenshots or GIFs of your game/demo here! For example:
 
-![Demo Screenshot](docs/screenshot1.png)
-![Tilemap Example](docs/screenshot2.png)
-![UI Overlay](docs/screenshot3.png)
+![Dynamic Lighting](docs/light.gif)
+![Interactive UI](docs/ui.gif)
 
 Screenshots are stored in `docs/` and referenced here.
 
@@ -83,11 +86,11 @@ Screenshots are stored in `docs/` and referenced here.
 This template links LittleEngine as a **submodule** by default.  
 If you prefer to install LittleEngine system-wide and link it, adjust `CMakeLists.txt` accordingly.
 
-For engine API docs, see the [LittleEngine README](https://github.com/yourname/LittleEngine).
+For engine API docs, see the [LittleEngine README](https://github.com/fyx0x/LittleEngine).
 
 ---
 
 ## 📝 License
 
 This template is released under the MIT License.  
-LittleEngine and third-party dependencies retain their own licenses (see [LittleEngine/LICENSES.md](https://github.com/yourname/LittleEngine/blob/main/LICENSES.md)).
+LittleEngine and third-party dependencies retain their own licenses (see [LittleEngine/LICENSES.md](https://github.com/fyx0x/LittleEngine/blob/main/LICENSES.md)).
