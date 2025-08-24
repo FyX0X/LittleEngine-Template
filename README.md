@@ -60,13 +60,10 @@ CMakeLists.txt    # Project build script (links against LittleEngine)
 ---
 
 ## 🖼️ Screenshots
-
-Add screenshots or GIFs of your game/demo here! For example:
-
+- Dynamic Lighting
 ![Dynamic Lighting](docs/light.gif)
+- Interactive UI
 ![Interactive UI](docs/ui.gif)
-
-Screenshots are stored in `docs/` and referenced here.
 
 ---
 
