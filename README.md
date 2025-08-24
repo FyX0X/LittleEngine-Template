@@ -60,9 +60,9 @@ CMakeLists.txt    # Project build script (links against LittleEngine)
 ---
 
 ## 🖼️ Screenshots
-- Dynamic Lighting
+### Dynamic Lighting
 ![Dynamic Lighting](docs/light.gif)
-- Interactive UI
+### Interactive UI
 ![Interactive UI](docs/ui.gif)
 
 ---
